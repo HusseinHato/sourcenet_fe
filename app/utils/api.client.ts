@@ -8,6 +8,7 @@ export const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 // Request interceptor - add auth token
@@ -29,7 +30,9 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Clear auth and redirect to login
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -56,4 +59,11 @@ export function clearAuthToken(): void {
  */
 export function getAuthToken(): string | null {
   return localStorage.getItem('authToken');
+}
+
+/**
+ * Get API base URL
+ */
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
 }

@@ -7,22 +7,14 @@ import { Button } from '@/app/components/common/Button';
 import Link from 'next/link';
 import { ShoppingCart, Download } from 'lucide-react';
 import { formatPrice, formatDateRelative } from '@/app/utils/format.utils';
+import { redirect } from 'next/navigation';
 
 export default function BuyerDashboardPage() {
   const { user } = useUserStore();
   const { data: purchases, isLoading } = useGetMyPurchases();
 
   if (!user) {
-    return (
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Please log in to access your purchases</p>
-          <Link href="/login">
-            <Button>Login</Button>
-          </Link>
-        </div>
-      </main>
-    );
+    redirect('/login');
   }
 
   return (
@@ -44,39 +36,39 @@ export default function BuyerDashboardPage() {
           <div className="flex justify-center py-12">
             <Loading />
           </div>
-        ) : purchases && purchases.items.length > 0 ? (
+        ) : purchases && purchases.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Dataset</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Price</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Price (SUI)</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Purchased</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {purchases.items.map((purchase) => (
+                {purchases.map((purchase: any) => (
                   <tr key={purchase.id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">Dataset #{purchase.dataPodId.slice(0, 8)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{formatPrice(purchase.price)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{purchase.datapod_title || `Dataset #${purchase.datapodId?.slice(0, 8) || 'N/A'}`}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{purchase.price_sui || purchase.priceSui || 0}</td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          purchase.status === 'completed'
+                          purchase.purchase_status === 'completed' || purchase.status === 'completed'
                             ? 'bg-green-100 text-green-800'
-                            : purchase.status === 'pending'
+                            : purchase.purchase_status === 'pending' || purchase.status === 'pending'
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {purchase.status}
+                        {purchase.purchase_status || purchase.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{formatDateRelative(purchase.createdAt)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{formatDateRelative(purchase.created_at || purchase.createdAt)}</td>
                     <td className="px-6 py-4 text-sm">
-                      {purchase.status === 'completed' && (
+                      {(purchase.purchase_status === 'completed' || purchase.status === 'completed') && (
                         <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
                           <Download size={16} />
                           Download

@@ -6,6 +6,7 @@ import { Loading } from '@/app/components/common/Loading';
 import { Button } from '@/app/components/common/Button';
 import Link from 'next/link';
 import { TrendingUp, FileText, DollarSign, Star } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 export default function SellerDashboardPage() {
   const { user } = useUserStore();
@@ -14,14 +15,7 @@ export default function SellerDashboardPage() {
 
   if (!user) {
     return (
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Please log in to access the seller dashboard</p>
-          <Link href="/login">
-            <Button>Login</Button>
-          </Link>
-        </div>
-      </main>
+      redirect('/login')
     );
   }
 
@@ -109,25 +103,25 @@ export default function SellerDashboardPage() {
           <div className="flex justify-center py-12">
             <Loading />
           </div>
-        ) : dataPods && dataPods.items.length > 0 ? (
+        ) : dataPods && dataPods.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Price</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Price (SUI)</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Sales</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Rating</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {dataPods.items.map((pod) => (
+                {dataPods.map((pod: any) => (
                   <tr key={pod.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.title}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{pod.price} {pod.currency}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{pod.purchaseCount}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{pod.rating.toFixed(1)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{pod.price_sui || pod.priceSui}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{pod.total_sales || pod.totalSales || 0}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{((pod.average_rating || pod.averageRating) || 0).toFixed(1)}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${pod.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {pod.status}

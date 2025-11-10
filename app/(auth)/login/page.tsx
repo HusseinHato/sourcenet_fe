@@ -9,15 +9,37 @@ import { LogIn } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error } = useZKLogin();
-  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
-    // TODO: Integrate with actual Google OAuth and ZKLogin SDK
-    // This is a placeholder for the ZKLogin flow
-    const success = await login('placeholder-jwt-token');
-    if (success) {
-      router.push('/marketplace');
+  const handleZKLogin = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get ZKLogin configuration from environment
+      const clientId = process.env.NEXT_PUBLIC_ZKLOGIN_CLIENT_ID;
+      const redirectUrl = process.env.NEXT_PUBLIC_ZKLOGIN_REDIRECT_URL;
+
+      if (!clientId || !redirectUrl) {
+        alert('ZKLogin is not properly configured. Please check environment variables.');
+        return;
+      }
+
+      // Construct Google OAuth URL
+      // This redirects user to Google login, which then redirects back to our callback page
+      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      googleAuthUrl.searchParams.append('client_id', clientId);
+      googleAuthUrl.searchParams.append('redirect_uri', redirectUrl);
+      googleAuthUrl.searchParams.append('response_type', 'code');
+      googleAuthUrl.searchParams.append('scope', 'openid email profile');
+      googleAuthUrl.searchParams.append('state', Math.random().toString(36).substring(7));
+
+      // Redirect to Google OAuth
+      window.location.href = googleAuthUrl.toString();
+    } catch (err) {
+      console.error('ZKLogin error:', err);
+      alert('Failed to initiate ZKLogin. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -33,40 +55,18 @@ export default function LoginPage() {
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Login Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleGoogleLogin();
-          }}
-          className="space-y-4"
-        >
-          {/* Email Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              required
-            />
-          </div>
-
-          {/* ZKLogin Button */}
-          <Button type="submit" size="lg" isLoading={isLoading} className="w-full gap-2">
+        {/* ZKLogin Button */}
+        <div className="space-y-4">
+          <Button 
+            size="lg" 
+            isLoading={isLoading} 
+            onClick={handleZKLogin}
+            className="w-full gap-2"
+          >
             <LogIn size={20} />
-            Sign in with ZKLogin
+            Sign in with Google (ZKLogin)
           </Button>
-        </form>
+        </div>
 
         {/* Info Section */}
         <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
