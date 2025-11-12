@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/common/Button';
-import { LogIn } from 'lucide-react';
+import { LogIn, Wallet } from 'lucide-react';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { generateNonce, generateRandomness } from '@mysten/sui/zklogin';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
@@ -75,7 +76,7 @@ export default function LoginPage() {
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
 
-        {/* ZKLogin Button */}
+        {/* Login Options */}
         <div className="space-y-4">
           <Button 
             size="lg" 
@@ -86,6 +87,26 @@ export default function LoginPage() {
             <LogIn size={20} />
             Sign in with Google (ZKLogin)
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">or</span>
+            </div>
+          </div>
+
+          <Link href="/wallet-login" className="block">
+            <Button 
+              size="lg" 
+              variant="secondary"
+              className="w-full gap-2"
+            >
+              <Wallet size={20} />
+              Sign in with Wallet
+            </Button>
+          </Link>
         </div>
 
         {/* Info Section */}
