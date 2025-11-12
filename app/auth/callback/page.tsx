@@ -1,37 +1,60 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useZKLogin } from '@/app/hooks/useZKLogin';
 import { Loading } from '@/app/components/common/Loading';
+import { jwtToAddress } from '@mysten/sui/zklogin';
+import { getUserSalt } from '@/app/utils/zklogin.utils';
 
 export default function CallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login, isLoading, error } = useZKLogin();
   const [message, setMessage] = useState('Processing login...');
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Extract authorization code from URL params
-        const code = searchParams.get('code');
-        const state = searchParams.get('state');
+        // Extract JWT from URL fragment (Google returns it as id_token in fragment)
+        const fragment = window.location.hash.substring(1);
+        const params = new URLSearchParams(fragment);
+        const jwt = params.get('id_token');
 
-        if (!code) {
-          setMessage('No authorization code found. Redirecting to login...');
+        if (!jwt) {
+          setMessage('No JWT found. Redirecting to login...');
+          console.error('No JWT in callback URL');
+          setTimeout(() => router.push('/login'), 2000);
+          return;
+        }
+
+        setMessage('Deriving Sui address...');
+
+        // Get user salt (persistent across sessions)
+        const userSalt = getUserSalt();
+
+        // Derive the Sui address from JWT and user salt
+        // This returns a hex format address (0x...)
+        const address = jwtToAddress(jwt, userSalt);
+
+        if (!address) {
+          setMessage('Failed to derive address. Redirecting to login...');
+          console.error('Failed to derive address from JWT');
           setTimeout(() => router.push('/login'), 2000);
           return;
         }
 
         setMessage('Verifying with backend...');
 
-        // Send authorization code to backend for verification
-        // The backend will exchange it for JWT and return user data + token
-        const success = await login(code);
+        // Send JWT and address to backend for verification
+        // Backend will verify JWT and return user data + token
+        const success = await login(jwt, address);
 
         if (success) {
           setMessage('Login successful! Redirecting...');
+          // Clear session storage
+          sessionStorage.removeItem('zklogin_ephemeral_keypair');
+          sessionStorage.removeItem('zklogin_randomness');
+          sessionStorage.removeItem('zklogin_max_epoch');
           setTimeout(() => router.push('/marketplace'), 1000);
         } else {
           setMessage('Login failed. Redirecting to login page...');
@@ -46,7 +69,7 @@ export default function CallbackPage() {
     };
 
     handleCallback();
-  }, [searchParams, login, router]);
+  }, [login, router]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">

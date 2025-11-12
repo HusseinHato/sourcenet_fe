@@ -1,17 +1,36 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/app/store/userStore';
 import { formatAddress } from '@/app/utils/format.utils';
 import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/app/components/common/Button';
+import { clearAuthToken } from '@/app/utils/api.client';
 
 interface NavbarProps {
   onMenuClick?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
-  const { user, logout } = useUserStore();
+  const router = useRouter();
+  const { user, logout: storeLogout } = useUserStore();
+
+  const handleLogout = () => {
+    // Clear auth token and user data from localStorage
+    clearAuthToken();
+    localStorage.removeItem('user');
+    // NOTE: Do NOT clear zklogin_user_salt - it must persist across sessions
+    // to ensure the same Sui address is derived for the same Google account
+    
+    // Clear user from store
+    storeLogout();
+    
+    // Redirect to login
+    router.push('/login');
+    
+    console.log('User logged out from navbar');
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm">
@@ -36,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               <>
                 <span className="text-sm text-gray-600">{formatAddress(user.address)}</span>
                 <span className="text-sm font-semibold text-blue-600">{user.balance} SUI</span>
-                <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
                   <LogOut size={16} />
                   Logout
                 </Button>

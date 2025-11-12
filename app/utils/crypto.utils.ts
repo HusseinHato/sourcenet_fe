@@ -132,7 +132,7 @@ export async function decryptData(
     throw new Error('Decryption failed: authentication tag verification failed');
   }
 
-  return decrypted.buffer;
+  return decrypted.buffer as ArrayBuffer;
 }
 
 /**

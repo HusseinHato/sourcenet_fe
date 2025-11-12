@@ -77,15 +77,22 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="bg-blue-600 py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center justify-center flex flex-col gap-4 items-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Start?</h2>
           <p className="text-blue-100 mb-8">Join thousands of data sellers and buyers on DataMarket</p>
           {user ? (
-            <Link href="/marketplace">
-              <Button size="lg" variant="secondary">
-                Explore Marketplace
-              </Button>
-            </Link>
+            <div className='justify-center flex gap-4'>
+              <Link href="/marketplace">
+                <Button size="lg" variant="secondary">
+                  Explore Marketplace
+                </Button>
+              </Link>
+              <Link href="/seller">
+                <Button size="lg" variant="secondary">
+                  Seller Dashboard
+                </Button>
+              </Link>
+            </div>
           ) : (
             <Link href="/login">
               <Button size="lg" variant="secondary">

@@ -1,15 +1,34 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/app/store/userStore';
 import { ShoppingCart, Upload, TrendingUp, Home, Search, LogOut } from 'lucide-react';
+import { clearAuthToken } from '@/app/utils/api.client';
 
 interface SidebarProps {
   isOpen: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
-  const { user, logout } = useUserStore();
+  const router = useRouter();
+  const { user, logout: storeLogout } = useUserStore();
+
+  const handleLogout = () => {
+    // Clear auth token and user data from localStorage
+    clearAuthToken();
+    localStorage.removeItem('user');
+    // NOTE: Do NOT clear zklogin_user_salt - it must persist across sessions
+    // to ensure the same Sui address is derived for the same Google account
+    
+    // Clear user from store
+    storeLogout();
+    
+    // Redirect to login
+    router.push('/login');
+    
+    console.log('User logged out from sidebar');
+  };
 
   const menuItems = [
     { href: '/', icon: Home, label: 'Home' },
@@ -39,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
         {user && (
           <div className="p-4 border-t border-gray-200">
-            <button onClick={logout} className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+            <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
               <LogOut size={20} />
               <span className="font-medium">Logout</span>
             </button>

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useZKLogin } from '@/app/hooks/useZKLogin';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/common/Button';
-import { Loading } from '@/app/components/common/Loading';
 import { LogIn } from 'lucide-react';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { generateNonce, generateRandomness } from '@mysten/sui/zklogin';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,27 +19,46 @@ export default function LoginPage() {
       // Get ZKLogin configuration from environment
       const clientId = process.env.NEXT_PUBLIC_ZKLOGIN_CLIENT_ID;
       const redirectUrl = process.env.NEXT_PUBLIC_ZKLOGIN_REDIRECT_URL;
+      const suiRpcUrl = process.env.NEXT_PUBLIC_SUI_RPC_URL || getFullnodeUrl('devnet');
 
       if (!clientId || !redirectUrl) {
         alert('ZKLogin is not properly configured. Please check environment variables.');
         return;
       }
 
-      // Construct Google OAuth URL
-      // This redirects user to Google login, which then redirects back to our callback page
+      // Step 1: Generate ephemeral key pair
+      const ephemeralKeyPair = new Ed25519Keypair();
+      const ephemeralPublicKey = ephemeralKeyPair.getPublicKey();
+
+      // Step 2: Get current epoch from Sui network
+      const suiClient = new SuiClient({ url: suiRpcUrl });
+      const { epoch } = await suiClient.getLatestSuiSystemState();
+      const maxEpoch = Number(epoch) + 2; // Ephemeral key valid for 2 epochs
+
+      // Step 3: Generate nonce and randomness
+      const randomness = generateRandomness();
+      const nonce = generateNonce(ephemeralPublicKey, maxEpoch, randomness);
+
+      // Step 4: Store ephemeral key pair, randomness, and max epoch in sessionStorage for callback
+      sessionStorage.setItem('zklogin_ephemeral_keypair', JSON.stringify({
+        publicKey: ephemeralPublicKey.toBase64(),
+      }));
+      sessionStorage.setItem('zklogin_randomness', randomness);
+      sessionStorage.setItem('zklogin_max_epoch', maxEpoch.toString());
+
+      // Step 5: Construct Google OAuth URL with nonce
       const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       googleAuthUrl.searchParams.append('client_id', clientId);
       googleAuthUrl.searchParams.append('redirect_uri', redirectUrl);
-      googleAuthUrl.searchParams.append('response_type', 'code');
+      googleAuthUrl.searchParams.append('response_type', 'id_token');
       googleAuthUrl.searchParams.append('scope', 'openid email profile');
-      googleAuthUrl.searchParams.append('state', Math.random().toString(36).substring(7));
+      googleAuthUrl.searchParams.append('nonce', nonce);
 
       // Redirect to Google OAuth
       window.location.href = googleAuthUrl.toString();
     } catch (err) {
       console.error('ZKLogin error:', err);
       alert('Failed to initiate ZKLogin. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

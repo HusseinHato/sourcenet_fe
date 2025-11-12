@@ -11,26 +11,32 @@ export function useZKLogin() {
   const { setUser, logout: storeLogout } = useUserStore();
 
   /**
-   * Login with ZKLogin JWT token
-   * This is called after Google OAuth redirect with JWT
-   * @param jwtToken - JWT token from ZKLogin/Google OAuth
+   * Login with ZKLogin - sends JWT and address to backend
+   * @param jwt - JWT token from Google OAuth
+   * @param address - Sui address derived from JWT (hex format 0x...)
    */
-  const login = useCallback(async (jwtToken: string): Promise<boolean> => {
+  const login = useCallback(async (jwt: string, address: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
-      if (!jwtToken || jwtToken.trim().length === 0) {
-        throw new Error('No JWT token provided');
+      if (!jwt || jwt.trim().length === 0) {
+        throw new Error('JWT is required');
+      }
+      if (!address || address.trim().length === 0) {
+        throw new Error('Address is required');
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       
-      console.log('ZKLogin: Sending JWT to backend', { apiUrl, tokenLength: jwtToken.length });
+      console.log('ZKLogin: Sending callback to backend', { apiUrl, address });
+
+      // Build request payload with JWT and address
+      const payload = { jwt, address };
 
       const response = await fetch(`${apiUrl}/auth/zklogin/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jwt: jwtToken }),
+        body: JSON.stringify(payload),
       });
 
       console.log('ZKLogin: Backend response', { status: response.status, ok: response.ok });
@@ -63,6 +69,10 @@ export function useZKLogin() {
 
       // Set auth token in both localStorage and API client
       setAuthToken(data.data.token);
+      
+      // Persist user data for session restoration
+      localStorage.setItem('user', JSON.stringify(user));
+      
       setUser(user);
       return true;
     } catch (err) {
@@ -78,7 +88,11 @@ export function useZKLogin() {
   const logout = useCallback(() => {
     storeLogout();
     localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    // NOTE: Do NOT clear zklogin_user_salt - it must persist across sessions
+    // to ensure the same Sui address is derived for the same Google account
     setError(null);
+    console.log('User logged out, session cleared');
   }, [storeLogout]);
 
   const getCurrentUser = useCallback(async (): Promise<User | null> => {
