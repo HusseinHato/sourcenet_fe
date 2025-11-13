@@ -38,3 +38,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     </QueryClientProvider>
   )
 }
+/**
+ * SessionRestorer component that runs the auth persistence hook
+ * This is separated to ensure it runs in a client component context
+ */
