@@ -8,6 +8,17 @@ import Link from 'next/link';
 import { TrendingUp, FileText, DollarSign, Star } from 'lucide-react';
 import { redirect } from 'next/navigation';
 
+const formatRating = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return '0.0';
+  }
+
+  const numeric =
+    typeof value === 'number' ? value : Number.parseFloat(String(value).trim());
+
+  return Number.isFinite(numeric) ? numeric.toFixed(1) : '0.0';
+};
+
 export default function SellerDashboardPage() {
   const { user } = useUserStore();
   const { data: dataPods, isLoading: isLoadingPods } = useGetMyDataPods();
@@ -70,7 +81,7 @@ export default function SellerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Average Rating</p>
-                <p className="text-3xl font-bold text-gray-900">{(stats?.averageRating || 0).toFixed(1)}</p>
+                <p className="text-3xl font-bold text-gray-900">{formatRating(stats?.averageRating)}</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <Star className="text-yellow-600" size={24} />
@@ -121,7 +132,7 @@ export default function SellerDashboardPage() {
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.title}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.price_sui || pod.priceSui}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.total_sales || pod.totalSales || 0}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{((pod.average_rating || pod.averageRating) || 0).toFixed(1)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{formatRating(pod.average_rating ?? pod.averageRating)}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${pod.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {pod.status}
