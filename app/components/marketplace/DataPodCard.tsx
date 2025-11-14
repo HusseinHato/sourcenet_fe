@@ -57,7 +57,7 @@ export const DataPodCard: React.FC<DataPodCardProps> = ({ dataPod: rawDataPod })
 
           {/* Price */}
           <div className="pt-2 border-t border-gray-100">
-            <p className="text-lg font-bold text-blue-600">{priceSui} SUI</p>
+            <p className="text-lg font-bold text-gray-900">{priceSui} SUI</p>
           </div>
         </div>
       </div>

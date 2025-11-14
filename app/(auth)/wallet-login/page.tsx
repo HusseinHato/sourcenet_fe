@@ -29,11 +29,11 @@ export default function WalletLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gray-900 rounded-lg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-2xl">D</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">DataMarket</h1>
@@ -48,11 +48,11 @@ export default function WalletLoginPage() {
 
           {account && (
             <>
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-600">
                   <span className="font-semibold">Connected Wallet:</span>
                 </p>
-                <p className="text-sm text-blue-600 font-mono mt-1">
+                <p className="text-sm text-gray-900 font-mono mt-1">
                   {account.address.slice(0, 6)}...{account.address.slice(-4)}
                 </p>
               </div>
@@ -71,7 +71,7 @@ export default function WalletLoginPage() {
         </div>
 
         {/* Info Section */}
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
             <Wallet size={18} />
             Supported Wallets
@@ -87,7 +87,7 @@ export default function WalletLoginPage() {
         {/* Footer */}
         <p className="text-center text-sm text-gray-600 mt-6">
           By signing in, you agree to our{' '}
-          <a href="#" className="text-blue-600 hover:underline">
+          <a href="#" className="text-gray-900 hover:underline">
             Terms of Service
           </a>
         </p>

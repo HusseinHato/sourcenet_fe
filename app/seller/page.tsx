@@ -46,8 +46,8 @@ export default function SellerDashboardPage() {
                 <p className="text-gray-600 text-sm">Total Sales</p>
                 <p className="text-3xl font-bold text-gray-900">{stats?.totalSales || 0}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-blue-600" size={24} />
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-gray-600" size={24} />
               </div>
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function SellerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Average Rating</p>
-                <p className="text-3xl font-bold text-gray-900">{(stats?.averageRating || 0).toFixed(1)}</p>
+                <p className="text-3xl font-bold text-gray-900">{(stats?.averageRating || 0)}</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <Star className="text-yellow-600" size={24} />
@@ -121,7 +121,7 @@ export default function SellerDashboardPage() {
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.title}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.price_sui || pod.priceSui}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{pod.total_sales || pod.totalSales || 0}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{((pod.average_rating || pod.averageRating) || 0).toFixed(1)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{((pod.average_rating || pod.averageRating) || 0)}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${pod.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {pod.status}

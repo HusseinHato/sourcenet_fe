@@ -9,12 +9,12 @@ export default function Home() {
   const { user } = useUserStore();
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <main className="min-h-screen bg-linear-to-br from-white to-gray-300">
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
         <div className="text-center">
           <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
-            Buy & Sell Data with <span className="text-blue-600">Confidence</span>
+            Buy & Sell Data with <span className="text-gray-900">Confidence</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             A decentralized data marketplace powered by Sui blockchain. Secure, transparent, and encrypted data transactions.
@@ -41,8 +41,8 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Lock className="text-blue-600" size={32} />
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Lock className="text-gray-600" size={32} />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">End-to-End Encrypted</h3>
               <p className="text-gray-600">
@@ -76,10 +76,10 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-blue-600 py-16">
+      <section className="bg-gray-900 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center justify-center flex flex-col gap-4 items-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Start?</h2>
-          <p className="text-blue-100 mb-8">Join thousands of data sellers and buyers on DataMarket</p>
+          <p className="text-gray-300 mb-8">Join thousands of data sellers and buyers on DataMarket</p>
           {user ? (
             <div className='justify-center flex gap-4'>
               <Link href="/marketplace">

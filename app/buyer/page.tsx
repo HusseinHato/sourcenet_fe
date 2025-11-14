@@ -69,7 +69,7 @@ export default function BuyerDashboardPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">{formatDateRelative(purchase.created_at || purchase.createdAt)}</td>
                     <td className="px-6 py-4 text-sm">
                       {(purchase.purchase_status === 'completed' || purchase.status === 'completed') && (
-                        <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+                        <button className="flex items-center gap-2 text-gray-900 hover:text-gray-700 font-medium">
                           <Download size={16} />
                           Download
                         </button>
