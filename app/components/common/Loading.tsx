@@ -9,7 +9,7 @@ export const Loading: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }
 
   return (
     <div className="flex items-center justify-center">
-      <div className={`${sizeClasses[size]} border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin`} />
+      <div className={`${sizeClasses[size]} border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin`} />
     </div>
   );
 };

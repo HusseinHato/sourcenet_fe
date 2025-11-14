@@ -35,7 +35,7 @@ export default function MarketplacePage() {
   }, [data, setDataPods, setTotalCount]);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-[#ffffff]">
       {/* Header */}
       <div className="mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Marketplace</h1>
@@ -54,7 +54,7 @@ export default function MarketplacePage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-600"
           />
         </div>
       </div>

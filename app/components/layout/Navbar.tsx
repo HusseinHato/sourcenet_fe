@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">D</span>
             </div>
             <span className="font-bold text-lg text-gray-900">DataMarket</span>
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             {user ? (
               <>
                 <span className="text-sm text-gray-600">{formatAddress(user.address)}</span>
-                <span className="text-sm font-semibold text-blue-600">{user.balance} SUI</span>
+                <span className="text-sm font-semibold text-gray-900">{user.balance} SUI</span>
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
                   <LogOut size={16} />
                   Logout

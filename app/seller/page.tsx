@@ -57,8 +57,8 @@ export default function SellerDashboardPage() {
                 <p className="text-gray-600 text-sm">Total Sales</p>
                 <p className="text-3xl font-bold text-gray-900">{stats?.totalSales || 0}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-blue-600" size={24} />
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-gray-600" size={24} />
               </div>
             </div>
           </div>

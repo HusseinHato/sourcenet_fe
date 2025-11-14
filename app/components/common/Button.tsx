@@ -15,7 +15,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2';
 
     const variantStyles = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-400',
+      primary: 'bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-600',
       secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:bg-gray-100',
       danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-400',
       ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 disabled:text-gray-400',
