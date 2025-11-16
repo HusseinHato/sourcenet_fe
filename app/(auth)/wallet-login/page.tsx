@@ -29,8 +29,8 @@ export default function WalletLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f5] via-white to-[#e6e6e6] px-4">
+      <div className="w-full max-w-md bg-[#F0F0F0] rounded-lg shadow-lg p-8 border border-gray-300">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gray-900 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -48,7 +48,7 @@ export default function WalletLoginPage() {
 
           {account && (
             <>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="p-4 bg-white rounded-lg border border-gray-300">
                 <p className="text-sm text-gray-600">
                   <span className="font-semibold">Connected Wallet:</span>
                 </p>
@@ -71,7 +71,7 @@ export default function WalletLoginPage() {
         </div>
 
         {/* Info Section */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="mt-8 p-4 bg-white rounded-lg border border-gray-300">
           <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
             <Wallet size={18} />
             Supported Wallets

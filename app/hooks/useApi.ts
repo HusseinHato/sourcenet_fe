@@ -17,6 +17,9 @@ export function useGetDataPods(
     price_min?: number;
     price_max?: number;
     search?: string;
+    status?: string;
+    min_rating?: number;
+    tag?: string;
   }
 ) {
   return useQuery({

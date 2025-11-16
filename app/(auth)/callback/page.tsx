@@ -80,8 +80,8 @@ export default function CallbackPage() {
   }, [login, router]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="text-center">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f5] via-white to-[#e6e6e6]">
+      <div className="w-full max-w-md bg-[#F0F0F0] rounded-lg shadow-lg p-8 text-center">
         <Loading size="lg" />
         <p className="mt-4 text-gray-600">{message}</p>
         {error && <p className="mt-2 text-red-600">{error}</p>}

@@ -9,6 +9,7 @@ interface MarketplaceStore {
   error: string | null;
   totalCount: number;
   currentPage: number;
+  searchQuery: string;
 
   setDataPods: (dataPods: DataPod[]) => void;
   addDataPod: (dataPod: DataPod) => void;
@@ -18,6 +19,7 @@ interface MarketplaceStore {
   setError: (error: string | null) => void;
   setTotalCount: (count: number) => void;
   setCurrentPage: (page: number) => void;
+  setSearchQuery: (query: string) => void;
   updateFromWebSocket: (dataPod: DataPod) => void;
   clear: () => void;
 }
@@ -28,6 +30,7 @@ export const useMarketplaceStore = create<MarketplaceStore>((set) => ({
   error: null,
   totalCount: 0,
   currentPage: 1,
+  searchQuery: '',
 
   setDataPods: (dataPods) => set({ dataPods }),
 
@@ -58,6 +61,8 @@ export const useMarketplaceStore = create<MarketplaceStore>((set) => ({
 
   setCurrentPage: (currentPage) => set({ currentPage }),
 
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
+
   updateFromWebSocket: (dataPod) =>
     set((state) => ({
       dataPods: state.dataPods.map((pod) =>
@@ -72,5 +77,6 @@ export const useMarketplaceStore = create<MarketplaceStore>((set) => ({
       error: null,
       totalCount: 0,
       currentPage: 1,
+      searchQuery: '',
     }),
 }));
