@@ -26,7 +26,7 @@ export default function WalletLoginPage() {
     setIsLoading(false);
 
     if (success) {
-      router.push('/marketplace');
+      router.push('/');
     }
   };
 

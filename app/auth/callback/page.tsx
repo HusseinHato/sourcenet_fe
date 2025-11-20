@@ -55,7 +55,7 @@ export default function CallbackPage() {
           sessionStorage.removeItem('zklogin_ephemeral_keypair');
           sessionStorage.removeItem('zklogin_randomness');
           sessionStorage.removeItem('zklogin_max_epoch');
-          setTimeout(() => router.push('/marketplace'), 1000);
+          setTimeout(() => router.push('/'), 1000);
         } else {
           setMessage('Login failed. Redirecting to login page...');
           setTimeout(() => router.push('/login'), 2000);
