@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useUserStore } from '@/app/store/userStore';
+import { useUserStore } from '@/app/(main)/store/userStore';
 import { setAuthToken } from '@/app/utils/api.client';
 import { User } from '@/app/types';
 
@@ -27,7 +27,7 @@ export function useZKLogin() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      
+
       console.log('ZKLogin: Sending callback to backend', { apiUrl, address });
 
       // Build request payload with JWT and address
@@ -48,7 +48,7 @@ export function useZKLogin() {
       }
 
       const data = await response.json();
-      
+
       console.log('ZKLogin: Response data', { hasData: !!data.data, hasToken: !!data.data?.token });
 
       // Validate response data
@@ -69,10 +69,10 @@ export function useZKLogin() {
 
       // Set auth token in both localStorage and API client
       setAuthToken(data.data.token);
-      
+
       // Persist user data for session restoration
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       setUser(user);
       return true;
     } catch (err) {

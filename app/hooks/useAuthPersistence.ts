@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useUserStore } from '@/app/store/userStore';
+import { useUserStore } from '@/app/(main)/store/userStore';
 import { setAuthToken, getAuthToken } from '@/app/utils/api.client';
 import { User } from '@/app/types';
 

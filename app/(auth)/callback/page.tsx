@@ -80,11 +80,24 @@ export default function CallbackPage() {
   }, [login, router]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f5f5f5] via-white to-[#e6e6e6]">
-      <div className="w-full max-w-md bg-[#F0F0F0] rounded-lg shadow-lg p-8 text-center">
-        <Loading size="lg" />
-        <p className="mt-4 text-gray-600">{message}</p>
-        {error && <p className="mt-2 text-red-600">{error}</p>}
+    <main className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12 bg-gradient-to-br from-[#f5f5f5] via-white to-[#e6e6e6]">
+      {/* Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-[-120px] left-[8%] h-[520px] w-[520px] rounded-full bg-[#919191]/15 blur-3xl" />
+        <div className="absolute bottom-[-180px] right-[12%] h-[480px] w-[480px] rounded-full bg-[#474747]/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-1/2 mx-auto h-64 w-3/4 -translate-y-1/2 rounded-full bg-[#CECECE]/8 blur-3xl" />
+      </div>
+      <div className="w-full max-w-md relative overflow-hidden rounded-3xl border border-[#919191]/30 bg-[#CECECE]/60 p-8 backdrop-blur-3xl shadow-[0_45px_90px_-40px_rgba(20,20,20,0.15)]">
+        {/* Glassmorphism Layers */}
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#919191]/15 via-transparent to-[#474747]/10" />
+        <div className="absolute inset-0 rounded-3xl border border-[#919191]/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)]" />
+        {/* Gradient Line Top */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#919191]/40 to-transparent" />
+        <div className="relative z-20 text-center">
+          <Loading size="lg" />
+          <p className="mt-6 text-[#474747] font-medium">{message}</p>
+          {error && <p className="mt-3 text-red-600 font-medium">{error}</p>}
+        </div>
       </div>
     </main>
   );

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useCurrentAccount, useSignPersonalMessage } from '@mysten/dapp-kit';
-import { useUserStore } from '@/app/store/userStore';
+import { useUserStore } from '@/app/(main)/store/userStore';
 import { setAuthToken } from '@/app/utils/api.client';
 import { User } from '@/app/types';
 
@@ -50,7 +50,7 @@ export function useWalletAuth() {
                   body: JSON.stringify({
                     address: account.address,
                     signature: signature.signature,
-                    publicKey: signature.publicKey,
+                    publicKey: account.publicKey ?? null,
                   }),
                 });
 

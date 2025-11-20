@@ -1,70 +1,90 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useUserStore } from '@/app/store/userStore';
-import { ShoppingCart, Upload, TrendingUp, Home, Search, LogOut } from 'lucide-react';
-import { clearAuthToken } from '@/app/utils/api.client';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Database, LayoutDashboard, Upload, ShoppingBag, Star, Store, Info } from 'lucide-react';
 
-interface SidebarProps {
-  isOpen: boolean;
-}
+const CATEGORIES = ['All', 'AI/ML', 'Finance', 'Healthcare', 'Social', 'E-commerce', 'Climate'];
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+export function Sidebar() {
+  const pathname = usePathname();
   const router = useRouter();
-  const { user, logout: storeLogout } = useUserStore();
+  const searchParams = useSearchParams();
+  const currentCategory = searchParams.get('category') || 'All';
 
-  const handleLogout = () => {
-    // Clear auth token and user data from localStorage
-    clearAuthToken();
-    localStorage.removeItem('user');
-    // NOTE: Do NOT clear zklogin_user_salt - it must persist across sessions
-    // to ensure the same Sui address is derived for the same Google account
-    
-    // Clear user from store
-    storeLogout();
-    
-    // Redirect to login
-    router.push('/login');
-    
-    console.log('User logged out from sidebar');
+  const handleCategoryClick = (category: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (category === 'All') {
+      params.delete('category');
+    } else {
+      params.set('category', category);
+    }
+    // Reset page when category changes
+    params.set('page', '1');
+
+    // If not on home page, redirect to home
+    if (pathname !== '/') {
+      router.push(`/?${params.toString()}`);
+    } else {
+      router.replace(`/?${params.toString()}`);
+    }
   };
 
-  const menuItems = [
-    { href: '/', icon: Home, label: 'Home' },
-    { href: '/marketplace', icon: Search, label: 'Marketplace' },
-    ...(user?.role === 'seller' || user?.role === 'both'
-      ? [
-          { href: '/seller', icon: TrendingUp, label: 'Seller Dashboard' },
-          { href: '/seller/upload', icon: Upload, label: 'Upload Data' },
-        ]
-      : []),
-    ...(user?.role === 'buyer' || user?.role === 'both'
-      ? [{ href: '/buyer', icon: ShoppingCart, label: 'My Purchases' }]
-      : []),
+  const navItems = [
+    { icon: Database, label: 'Datasets', href: '/', exact: true },
+    { icon: LayoutDashboard, label: 'Buyer Dashboard', href: '/buyer' },
+    { icon: Upload, label: 'Seller Dashboard', href: '/seller' },
+    { icon: Star, label: 'Reviews', href: '/review' },
   ];
 
   return (
-    <aside className={`fixed md:relative left-0 top-16 md:top-0 h-screen w-64 bg-gray-50 border-r border-gray-200 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+    <aside style={{ backgroundColor: '#F5F5F5', borderRight: '1px solid #CECECE' }} className="w-52 fixed h-screen overflow-y-auto hidden md:block top-0 pt-24 z-40">
       <div className="flex flex-col h-full">
-        <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => (
-            <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-              <item.icon size={20} className="text-gray-600" />
-              <span className="text-gray-700 font-medium">{item.label}</span>
-            </Link>
-          ))}
-        </nav>
+        <div className="px-5 pb-5 space-y-3">
+          <nav className="space-y-1.5">
+            {navItems.map((item) => {
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
 
-        {user && (
-          <div className="p-4 border-t border-gray-200">
-            <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-              <LogOut size={20} />
-              <span className="font-medium">Logout</span>
-            </button>
-          </div>
-        )}
+              const baseClass = 'group w-full flex items-center gap-3 px-4 py-2 rounded-md text-sm font-semibold transition-colors';
+              const stateClass = isActive
+                ? 'bg-[#353535] text-white border border-[#2b2b2b] shadow-glass-sm hover:bg-[#2b2b2b]'
+                : 'text-[#474747] border border-transparent hover:bg-[#E8E8E8] hover:border-[#CECECE]';
+
+              return (
+                <Link key={item.label} href={item.href} className={`${baseClass} ${stateClass}`}>
+                  <item.icon size={14} className="shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="mt-4 border-t border-[#D7D7D7] px-5 pt-5 pb-6">
+          <p style={{ color: '#919191' }} className="text-[11px] font-semibold uppercase tracking-wide mb-3">
+            Categories
+          </p>
+          <nav className="space-y-1">
+            {CATEGORIES.map((cat) => {
+              const isActive = currentCategory === cat && pathname === '/';
+              return (
+                <button
+                  key={cat}
+                  onClick={() => handleCategoryClick(cat)}
+                  className={`w-full text-left px-4 py-1.75 text-xs font-medium rounded-md transition-colors border ${isActive
+                    ? 'bg-[#EAEAEA] border-[#CECECE] text-[#353535]'
+                    : 'border-transparent text-[#474747] hover:bg-[#F0F0F0] hover:border-[#E0E0E0]'
+                    }`}
+                >
+                  {cat === 'All' ? 'All datasets' : cat}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
       </div>
     </aside>
   );
-};
+}
