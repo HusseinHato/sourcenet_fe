@@ -115,7 +115,7 @@ export default function BuyerDashboard() {
               <p className="text-gray-500 mt-1">Manage your purchases and track your spending</p>
             </div>
             <div className="flex items-center gap-3">
-              <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm">
+              <button className="inline-flex items-center gap-2 px-4 py-2 bg-[#474747] text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium shadow-sm">
                 <ShoppingBag size={16} />
                 Browse Marketplace
               </button>
@@ -130,7 +130,7 @@ export default function BuyerDashboard() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-gray-50 rounded-lg">
-                <Package className="text-gray-900" size={20} />
+                <Package className="text-[#474747]" size={20} />
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Total Purchases</p>
@@ -140,7 +140,7 @@ export default function BuyerDashboard() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-gray-50 rounded-lg">
-                <Download className="text-gray-900" size={20} />
+                <Download className="text-[#474747]" size={20} />
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Completed</p>
@@ -150,16 +150,16 @@ export default function BuyerDashboard() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-gray-50 rounded-lg">
-                <Clock className="text-gray-900" size={20} />
+                <Clock className="text-[#474747]" size={20} />
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Pending</p>
             <p className="text-3xl font-bold text-gray-900 mt-1">{pendingPurchases}</p>
           </div>
 
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ backgroundColor: '#474747', borderColor: '#474747' }}>
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-white/10 rounded-lg">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
                 <TrendingUp className="text-white" size={20} />
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function BuyerDashboard() {
                       <div className="text-right min-w-[80px]">
                         <p className="text-lg font-bold text-gray-900">{purchase.price_sui} SUI</p>
                       </div>
-                      <button className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all">
+                      <button className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-[#474747] hover:text-white hover:border-[#474747] transition-all">
                         <Download size={18} />
                       </button>
                     </div>

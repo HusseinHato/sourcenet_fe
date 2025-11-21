@@ -112,7 +112,7 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
       <Star
         key={i}
         size={size}
-        className={i < Math.floor(rating) ? 'fill-gray-900 text-gray-900' : 'fill-gray-200 text-gray-200'}
+        className={i < Math.floor(rating) ? 'fill-[#474747] text-[#474747]' : 'fill-gray-200 text-gray-200'}
       />
     ))}
   </div>
@@ -232,7 +232,7 @@ export default function DataDetailPage() {
                     key={idx}
                     className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
                   >
-                    <CheckCircle size={18} className="text-gray-900 flex-shrink-0" />
+                    <CheckCircle size={18} className="text-[#474747] flex-shrink-0" />
                     <span className="text-sm font-medium text-gray-700">{feature}</span>
                   </div>
                 ))}
@@ -295,7 +295,7 @@ export default function DataDetailPage() {
                 </div>
 
                 <div className="space-y-3 mb-6">
-                  <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3.5 font-semibold text-white transition hover:bg-gray-800 active:scale-95 shadow-sm">
+                  <button className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white transition active:scale-95 shadow-sm hover:opacity-90" style={{ backgroundColor: '#474747' }}>
                     <ShoppingCart size={18} />
                     Purchase Dataset
                   </button>
@@ -313,7 +313,7 @@ export default function DataDetailPage() {
 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div className="flex gap-3">
-                    <ShieldCheck size={20} className="text-gray-900 flex-shrink-0" />
+                    <ShieldCheck size={20} className="text-[#474747] flex-shrink-0" />
                     <div>
                       <p className="text-sm font-semibold text-gray-900 mb-0.5">Secure Transaction</p>
                       <p className="text-xs text-gray-500 leading-relaxed">

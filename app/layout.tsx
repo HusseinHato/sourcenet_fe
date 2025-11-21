@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DataMarket - Buy & Sell Data",
-  description: "A decentralized data marketplace powered by Sui blockchain",
+  title: "SourceNet - Buy and Sell Data",
+  description: "A decentralized web3 data marketplace powered by Sui blockchain",
 };
 
 export default function RootLayout({

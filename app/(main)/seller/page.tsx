@@ -95,7 +95,7 @@ export default function SellerDashboard() {
 
   const getStatusBadge = (status: string) => {
     return status === 'published' ? (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-900 text-white">
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: '#474747' }}>
         Published
       </span>
     ) : (
@@ -115,7 +115,7 @@ export default function SellerDashboard() {
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Seller Hub</h1>
               <p className="text-gray-500 mt-1">Monitor performance and manage your listings</p>
             </div>
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm">
+            <button className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium shadow-sm" style={{ backgroundColor: '#474747' }}>
               <Plus size={16} />
               Upload New Data
             </button>
@@ -129,7 +129,7 @@ export default function SellerDashboard() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-gray-50 rounded-lg">
-                <BarChart3 className="text-gray-900" size={20} />
+                <BarChart3 className="text-[#474747]" size={20} />
               </div>
               <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                 +12.5%
@@ -139,9 +139,9 @@ export default function SellerDashboard() {
             <p className="text-3xl font-bold text-gray-900 mt-1">{totalSales}</p>
           </div>
 
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ backgroundColor: '#474747', borderColor: '#474747' }}>
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-white/10 rounded-lg">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
                 <DollarSign className="text-white" size={20} />
               </div>
               <span className="text-xs font-medium text-green-400 bg-green-900/30 px-2 py-1 rounded-full">
@@ -157,7 +157,7 @@ export default function SellerDashboard() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-gray-50 rounded-lg">
-                <Star className="text-gray-900" size={20} />
+                <Star className="text-[#474747]" size={20} />
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Average Rating</p>
@@ -167,7 +167,7 @@ export default function SellerDashboard() {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-gray-50 rounded-lg">
-                <Package className="text-gray-900" size={20} />
+                <Package className="text-[#474747]" size={20} />
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Active Listings</p>
@@ -193,7 +193,8 @@ export default function SellerDashboard() {
                 placeholder="Search datasets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                style={{ '--tw-ring-color': '#474747' } as React.CSSProperties}
               />
             </div>
           </div>
@@ -249,7 +250,7 @@ export default function SellerDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5">
-                        <Star size={14} className="fill-gray-900 text-gray-900" />
+                        <Star size={14} className="fill-[#474747] text-[#474747]" />
                         <span className="font-medium text-gray-900">{pod.rating}</span>
                         <span className="text-xs text-gray-500">({pod.reviews})</span>
                       </div>
