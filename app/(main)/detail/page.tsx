@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Star,
   Download,
@@ -18,7 +19,10 @@ import {
   CheckCircle,
   ChevronRight,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react';
+import { api } from '../../utils/api.client';
+import { PurchaseModal } from '../../components/marketplace/PurchaseModal';
 
 type ReviewRating = 1 | 2 | 3 | 4 | 5;
 
@@ -50,62 +54,6 @@ interface Review {
   helpful: number;
 }
 
-const mockDataset: DatasetDetail = {
-  id: 'd-001',
-  title: 'Customer Behavior Analytics',
-  description:
-    'Comprehensive dataset containing detailed customer behavior patterns, purchase history, and engagement metrics. Perfect for machine learning models, business intelligence, and market analysis. This dataset includes over 1 million records of anonymized user interactions across multiple touchpoints.',
-  seller: 'DataVault Pro',
-  price: 150,
-  category: 'AI/ML',
-  fileSize: '2.5 GB',
-  records: 1000000,
-  updateFrequency: 'Weekly',
-  createdAt: '2024-01-15',
-  downloads: 2450,
-  rating: 4.8,
-  reviews: 127,
-  tags: ['customer-data', 'behavior', 'analytics', 'ecommerce', 'ml-ready'],
-  features: [
-    'Customer Demographics',
-    'Purchase History',
-    'Engagement Metrics',
-    'Behavioral Patterns',
-    'Geographic Data',
-    'Temporal Analysis',
-  ],
-};
-
-const mockReviews: Review[] = [
-  {
-    id: 'r-001',
-    buyer: 'John Doe',
-    rating: 5,
-    title: 'Excellent Data Quality',
-    comment: 'The dataset provided was comprehensive and well-organized. Highly recommend for ML projects.',
-    date: '2024-11-10',
-    helpful: 24,
-  },
-  {
-    id: 'r-002',
-    buyer: 'Sarah Smith',
-    rating: 5,
-    title: 'Fast Delivery & Great Support',
-    comment: 'Delivered on time with excellent documentation. Very responsive seller.',
-    date: '2024-11-08',
-    helpful: 18,
-  },
-  {
-    id: 'r-003',
-    buyer: 'Mike Johnson',
-    rating: 4,
-    title: 'Good Data, Minor Issues',
-    comment: 'Overall good quality. Had a small formatting issue but seller fixed it quickly.',
-    date: '2024-11-05',
-    helpful: 12,
-  },
-];
-
 const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) => (
   <div className="flex gap-1">
     {Array.from({ length: 5 }).map((_, i) => (
@@ -119,12 +67,124 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
 );
 
 export default function DataDetailPage() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || 'dp-001'; // Default ID for testing if none provided
+
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
   const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
+  const [dataset, setDataset] = useState<DatasetDetail | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
 
-  const sortedReviews = [...mockReviews].sort((a, b) =>
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // In a real app, we would fetch by ID
+      // const response = await api.getDataPodDetails(id);
+      // const data = response.data.data;
+
+      // For now, simulating API call or using mock if API fails/not ready
+      // We'll try to fetch, if it fails, we use mock data to ensure UI works
+      try {
+        const response = await api.getDataPodDetails(id);
+        const data = response.data.data;
+        setDataset({
+          id: data.datapodId,
+          title: data.title,
+          description: data.description,
+          seller: data.seller?.username || 'Unknown Seller',
+          price: data.priceSui,
+          category: data.category,
+          fileSize: 'Unknown', // Backend needs to provide this
+          records: 0, // Backend needs to provide this
+          updateFrequency: 'Unknown',
+          createdAt: data.publishedAt,
+          downloads: data.totalSales,
+          rating: data.averageRating || 0,
+          reviews: data.reviews?.length || 0,
+          tags: [], // Backend needs to provide this
+          features: [], // Backend needs to provide this
+        });
+        setReviews(data.reviews?.map((r: any) => ({
+          id: r.id,
+          buyer: 'Anonymous', // Reviewer name might not be public
+          rating: r.rating,
+          title: 'Review',
+          comment: r.comment,
+          date: r.createdAt,
+          helpful: 0,
+        })) || []);
+      } catch (err) {
+        console.warn('API fetch failed, using mock data', err);
+        // Fallback to mock data
+        setDataset({
+          id: 'd-001',
+          title: 'Customer Behavior Analytics',
+          description:
+            'Comprehensive dataset containing detailed customer behavior patterns, purchase history, and engagement metrics. Perfect for machine learning models, business intelligence, and market analysis. This dataset includes over 1 million records of anonymized user interactions across multiple touchpoints.',
+          seller: 'DataVault Pro',
+          price: 150,
+          category: 'AI/ML',
+          fileSize: '2.5 GB',
+          records: 1000000,
+          updateFrequency: 'Weekly',
+          createdAt: '2024-01-15',
+          downloads: 2450,
+          rating: 4.8,
+          reviews: 127,
+          tags: ['customer-data', 'behavior', 'analytics', 'ecommerce', 'ml-ready'],
+          features: [
+            'Customer Demographics',
+            'Purchase History',
+            'Engagement Metrics',
+            'Behavioral Patterns',
+            'Geographic Data',
+            'Temporal Analysis',
+          ],
+        });
+        setReviews([
+          {
+            id: 'r-001',
+            buyer: 'John Doe',
+            rating: 5,
+            title: 'Excellent Data Quality',
+            comment: 'The dataset provided was comprehensive and well-organized. Highly recommend for ML projects.',
+            date: '2024-11-10',
+            helpful: 24,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [id]);
+
+  const sortedReviews = [...reviews].sort((a, b) =>
     sortBy === 'helpful' ? b.helpful - a.helpful : new Date(b.date).getTime() - new Date(a.date).getTime()
   );
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <Loader2 className="animate-spin text-gray-400" size={48} />
+      </main>
+    );
+  }
+
+  if (!dataset) {
+    return (
+      <main className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <p className="text-gray-500">Dataset not found.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] pb-12">
@@ -136,11 +196,11 @@ export default function DataDetailPage() {
               Marketplace
             </a>
             <ChevronRight size={14} />
-            <a href={`/?category=${mockDataset.category}`} className="hover:text-gray-900 transition-colors">
-              {mockDataset.category}
+            <a href={`/?category=${dataset.category}`} className="hover:text-gray-900 transition-colors">
+              {dataset.category}
             </a>
             <ChevronRight size={14} />
-            <span className="text-gray-900 font-medium truncate">{mockDataset.title}</span>
+            <span className="text-gray-900 font-medium truncate">{dataset.title}</span>
           </div>
         </div>
       </div>
@@ -155,28 +215,28 @@ export default function DataDetailPage() {
                 <div>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {mockDataset.category}
+                      {dataset.category}
                     </span>
                     <div className="flex items-center gap-1.5 text-sm">
-                      <StarRating rating={mockDataset.rating} size={14} />
-                      <span className="font-medium text-gray-900">{mockDataset.rating}</span>
-                      <span className="text-gray-500">({mockDataset.reviews} reviews)</span>
+                      <StarRating rating={dataset.rating} size={14} />
+                      <span className="font-medium text-gray-900">{dataset.rating}</span>
+                      <span className="text-gray-500">({dataset.reviews} reviews)</span>
                     </div>
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{mockDataset.title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{dataset.title}</h1>
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
                       <User size={16} className="text-gray-600" />
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Seller</p>
-                      <p className="text-sm font-semibold text-gray-900">{mockDataset.seller}</p>
+                      <p className="text-sm font-semibold text-gray-900">{dataset.seller}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p className="text-gray-600 leading-relaxed mb-8">{mockDataset.description}</p>
+              <p className="text-gray-600 leading-relaxed mb-8">{dataset.description}</p>
 
               {/* Key Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-y border-gray-100">
@@ -184,35 +244,35 @@ export default function DataDetailPage() {
                   <p className="text-xs text-gray-500 mb-1">File Size</p>
                   <div className="flex items-center gap-2">
                     <Database size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{mockDataset.fileSize}</span>
+                    <span className="font-semibold text-gray-900">{dataset.fileSize}</span>
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Records</p>
                   <div className="flex items-center gap-2">
                     <FileText size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{mockDataset.records.toLocaleString()}</span>
+                    <span className="font-semibold text-gray-900">{dataset.records.toLocaleString()}</span>
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Updates</p>
                   <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{mockDataset.updateFrequency}</span>
+                    <span className="font-semibold text-gray-900">{dataset.updateFrequency}</span>
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Downloads</p>
                   <div className="flex items-center gap-2">
                     <Download size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{mockDataset.downloads.toLocaleString()}</span>
+                    <span className="font-semibold text-gray-900">{dataset.downloads.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
 
               {/* Tags */}
               <div className="mt-6 flex flex-wrap gap-2">
-                {mockDataset.tags.map((tag) => (
+                {dataset.tags.map((tag) => (
                   <span
                     key={tag}
                     className="inline-block px-3 py-1 rounded-lg bg-gray-50 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -227,7 +287,7 @@ export default function DataDetailPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Dataset Features</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {mockDataset.features.map((feature, idx) => (
+                {dataset.features.map((feature, idx) => (
                   <div
                     key={idx}
                     className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
@@ -254,30 +314,34 @@ export default function DataDetailPage() {
               </div>
 
               <div className="space-y-6">
-                {sortedReviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{review.buyer}</span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(review.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
+                {sortedReviews.length > 0 ? (
+                  sortedReviews.map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-900">{review.buyer}</span>
+                          <span className="text-xs text-gray-500">•</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(review.date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                        <StarRating rating={review.rating} size={14} />
                       </div>
-                      <StarRating rating={review.rating} size={14} />
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">{review.title}</h4>
+                      <p className="text-sm text-gray-600 mb-3">{review.comment}</p>
+                      <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                        <ThumbsUp size={14} />
+                        Helpful ({review.helpful})
+                      </button>
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">{review.title}</h4>
-                    <p className="text-sm text-gray-600 mb-3">{review.comment}</p>
-                    <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                      <ThumbsUp size={14} />
-                      Helpful ({review.helpful})
-                    </button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No reviews yet.</p>
+                )}
               </div>
             </div>
           </div>
@@ -289,13 +353,17 @@ export default function DataDetailPage() {
                 <div className="mb-6">
                   <p className="text-sm text-gray-500 mb-1">Total Price</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-gray-900">{mockDataset.price}</span>
+                    <span className="text-4xl font-bold text-gray-900">{dataset.price}</span>
                     <span className="text-xl font-medium text-gray-500">SUI</span>
                   </div>
                 </div>
 
                 <div className="space-y-3 mb-6">
-                  <button className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white transition active:scale-95 shadow-sm hover:opacity-90" style={{ backgroundColor: '#474747' }}>
+                  <button
+                    onClick={() => setIsPurchaseModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white transition active:scale-95 shadow-sm hover:opacity-90"
+                    style={{ backgroundColor: '#474747' }}
+                  >
                     <ShoppingCart size={18} />
                     Purchase Dataset
                   </button>
@@ -327,6 +395,24 @@ export default function DataDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Purchase Modal */}
+      {dataset && (
+        <PurchaseModal
+          isOpen={isPurchaseModalOpen}
+          onClose={() => setIsPurchaseModalOpen(false)}
+          onSuccess={() => {
+            // Handle success (e.g., redirect to buyer dashboard or show success message)
+            alert('Purchase successful! You can now download the dataset from your dashboard.');
+          }}
+          datapod={{
+            id: dataset.id,
+            title: dataset.title,
+            price_sui: dataset.price,
+            seller_name: dataset.seller,
+          }}
+        />
+      )}
     </main>
   );
 }

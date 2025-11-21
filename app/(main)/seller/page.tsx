@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Upload,
   TrendingUp,
@@ -15,7 +16,11 @@ import {
   Users,
   Search,
   MoreHorizontal,
+  Loader2,
 } from 'lucide-react';
+import { api, getAuthToken } from '../../utils/api.client';
+import { UploadDataPodModal } from '../../components/seller/UploadDataPodModal';
+import { useUserStore } from '../store/userStore';
 
 interface DataPod {
   id: string;
@@ -26,72 +31,114 @@ interface DataPod {
   revenue: number;
   rating: number;
   reviews: number;
-  status: 'published' | 'draft';
+  status: 'active' | 'inactive';
   views: number;
 }
 
-const mockDataPods: DataPod[] = [
-  {
-    id: 'dp-001',
-    title: 'Customer Behavior Analytics',
-    category: 'AI/ML',
-    price_sui: 150,
-    sales: 245,
-    revenue: 36750,
-    rating: 4.8,
-    reviews: 127,
-    status: 'published',
-    views: 1248,
-  },
-  {
-    id: 'dp-002',
-    title: 'E-commerce Transaction Data',
-    category: 'E-commerce',
-    price_sui: 200,
-    sales: 180,
-    revenue: 36000,
-    rating: 4.5,
-    reviews: 89,
-    status: 'published',
-    views: 923,
-  },
-  {
-    id: 'dp-003',
-    title: 'Social Media Sentiment Analysis',
-    category: 'Social',
-    price_sui: 120,
-    sales: 320,
-    revenue: 38400,
-    rating: 4.9,
-    reviews: 156,
-    status: 'published',
-    views: 1567,
-  },
-  {
-    id: 'dp-004',
-    title: 'Financial Market Data Feed',
-    category: 'Finance',
-    price_sui: 160,
-    sales: 195,
-    revenue: 31200,
-    rating: 4.7,
-    reviews: 98,
-    status: 'draft',
-    views: 0,
-  },
-];
+interface SellerStats {
+  totalSales: number;
+  totalRevenue: number;
+  averageRating: number;
+  activeListings: number;
+}
 
 export default function SellerDashboard() {
+  const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useUserStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dataPods, setDataPods] = useState<DataPod[]>([]);
+  const [stats, setStats] = useState<SellerStats>({
+    totalSales: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+    activeListings: 0,
+  });
 
-  const filteredDataPods = mockDataPods.filter((pod) =>
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [podsResponse, statsResponse] = await Promise.all([
+        api.getSellerDataPods(),
+        api.getSellerStats(),
+      ]);
+
+      // Transform API response to match UI interface
+      // API returns: { status, count, datapods: [...] }
+      const pods = podsResponse.data.datapods || podsResponse.data.data || [];
+      setDataPods(pods.map((pod: any) => ({
+        id: pod.datapodId || pod.id,
+        title: pod.title,
+        category: pod.category,
+        price_sui: parseFloat(pod.priceSui || pod.price_sui || '0'),
+        sales: parseInt(pod.totalSales || pod.sales || '0'),
+        revenue: parseFloat(pod.priceSui || pod.price_sui || '0') * parseInt(pod.totalSales || pod.sales || '0'),
+        rating: parseFloat(pod.averageRating || '0'),
+        reviews: parseInt(pod.reviewsCount || '0'),
+        status: pod.status || 'draft',
+        views: parseInt(pod.views || '0'),
+      })));
+
+      // Get stats from response or calculate from pods
+      const statsData = statsResponse.data.data || statsResponse.data || {};
+      const totalSalesCount = pods.reduce((sum: number, pod: any) => sum + parseInt(pod.totalSales || 0), 0);
+      const totalRevenueAmount = pods.reduce((sum: number, pod: any) => sum + (parseFloat(pod.priceSui || 0) * parseInt(pod.totalSales || 0)), 0);
+      
+      setStats({
+        totalSales: statsData.totalSales !== undefined ? statsData.totalSales : totalSalesCount,
+        totalRevenue: statsData.totalRevenue !== undefined ? statsData.totalRevenue : totalRevenueAmount,
+        averageRating: statsData.averageRating || 0,
+        activeListings: statsData.totalDataPods !== undefined ? statsData.totalDataPods : pods.length,
+      });
+
+    } catch (error) {
+      console.error('Failed to fetch seller data:', error);
+      // Fallback to empty or error state
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Wait for auth persistence to finish loading
+    if (isAuthLoading) {
+      return;
+    }
+
+    // Check if user is authenticated after loading is complete
+    const token = getAuthToken();
+    if (!token || !user) {
+      console.warn('No auth token or user found, redirecting to login');
+      router.push('/login');
+      return;
+    }
+
+    fetchData();
+  }, [router, isAuthLoading, user]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this data pod? This action cannot be undone.')) return;
+
+    try {
+      await api.deleteDataPod(id);
+      // Optimistically remove from UI or refresh
+      setDataPods((prev) => prev.filter((pod) => pod.id !== id));
+      // Also refresh stats if needed, but for now just removing from list is good feedback
+      fetchData();
+    } catch (error) {
+      console.error('Failed to delete data pod:', error);
+      alert('Failed to delete data pod. Please try again.');
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    alert('Edit functionality coming soon!');
+  };
+
+  const filteredDataPods = dataPods.filter((pod) =>
     pod.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const totalSales = mockDataPods.reduce((sum, pod) => sum + pod.sales, 0);
-  const totalRevenue = mockDataPods.reduce((sum, pod) => sum + pod.revenue, 0);
-  const avgRating = mockDataPods.reduce((sum, pod) => sum + pod.rating, 0) / mockDataPods.length;
-  const activeListings = mockDataPods.filter((pod) => pod.status === 'published').length;
 
   const getStatusBadge = (status: string) => {
     return status === 'published' ? (
@@ -115,7 +162,11 @@ export default function SellerDashboard() {
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Seller Hub</h1>
               <p className="text-gray-500 mt-1">Monitor performance and manage your listings</p>
             </div>
-            <button className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium shadow-sm" style={{ backgroundColor: '#474747' }}>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium shadow-sm"
+              style={{ backgroundColor: '#474747' }}
+            >
               <Plus size={16} />
               Upload New Data
             </button>
@@ -131,12 +182,12 @@ export default function SellerDashboard() {
               <div className="p-2 bg-gray-50 rounded-lg">
                 <BarChart3 className="text-[#474747]" size={20} />
               </div>
-              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+              {/* <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                 +12.5%
-              </span>
+              </span> */}
             </div>
             <p className="text-gray-500 text-sm font-medium">Total Sales</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{totalSales}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '-' : stats.totalSales}</p>
           </div>
 
           <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ backgroundColor: '#474747', borderColor: '#474747' }}>
@@ -144,13 +195,13 @@ export default function SellerDashboard() {
               <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
                 <DollarSign className="text-white" size={20} />
               </div>
-              <span className="text-xs font-medium text-green-400 bg-green-900/30 px-2 py-1 rounded-full">
+              {/* <span className="text-xs font-medium text-green-400 bg-green-900/30 px-2 py-1 rounded-full">
                 +8.3%
-              </span>
+              </span> */}
             </div>
             <p className="text-gray-400 text-sm font-medium">Total Revenue</p>
             <p className="text-3xl font-bold text-white mt-1">
-              {(totalRevenue / 1000).toFixed(1)}k <span className="text-lg font-normal text-gray-400">SUI</span>
+              {isLoading ? '-' : `${(stats.totalRevenue).toLocaleString()} SUI`}
             </p>
           </div>
 
@@ -161,7 +212,7 @@ export default function SellerDashboard() {
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Average Rating</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{avgRating.toFixed(1)}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '-' : stats.averageRating.toFixed(1)}</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -171,7 +222,7 @@ export default function SellerDashboard() {
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Active Listings</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{activeListings}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '-' : stats.activeListings}</p>
           </div>
         </div>
 
@@ -181,7 +232,7 @@ export default function SellerDashboard() {
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-bold text-gray-900">My Data Pods</h2>
               <span className="px-2.5 py-0.5 rounded-full bg-gray-100 text-xs font-medium text-gray-600">
-                {mockDataPods.length}
+                {dataPods.length}
               </span>
             </div>
 
@@ -201,78 +252,106 @@ export default function SellerDashboard() {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50/50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Dataset
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Performance
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Rating
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredDataPods.map((pod) => (
-                  <tr key={pod.id} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-gray-900">{pod.title}</p>
-                        <p className="text-sm text-gray-500 mt-0.5">{pod.category}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">{pod.price_sui} SUI</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-gray-900">
-                          <BarChart3 size={14} className="text-gray-400" />
-                          <span className="font-medium">{pod.sales} sales</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <DollarSign size={12} className="text-gray-400" />
-                          {pod.revenue.toLocaleString()} SUI revenue
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5">
-                        <Star size={14} className="fill-[#474747] text-[#474747]" />
-                        <span className="font-medium text-gray-900">{pod.rating}</span>
-                        <span className="text-xs text-gray-500">({pod.reviews})</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">{getStatusBadge(pod.status)}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+            {isLoading ? (
+              <div className="p-12 flex justify-center">
+                <Loader2 className="animate-spin text-gray-400" size={32} />
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50/50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Dataset
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Performance
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Rating
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredDataPods.length > 0 ? (
+                    filteredDataPods.map((pod) => (
+                      <tr key={pod.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-semibold text-gray-900">{pod.title}</p>
+                            <p className="text-sm text-gray-500 mt-0.5">{pod.category}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-medium text-gray-900">{pod.price_sui} SUI</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm text-gray-900">
+                              <BarChart3 size={14} className="text-gray-400" />
+                              <span className="font-medium">{pod.sales} sales</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <DollarSign size={12} className="text-gray-400" />
+                              {pod.revenue.toLocaleString()} SUI revenue
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <Star size={14} className="fill-[#474747] text-[#474747]" />
+                            <span className="font-medium text-gray-900">{pod.rating}</span>
+                            <span className="text-xs text-gray-500">({pod.reviews})</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">{getStatusBadge(pod.status)}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleEdit(pod.id)}
+                              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(pod.id)}
+                              className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        No data pods found. Upload your first dataset!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
+
+      <UploadDataPodModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={() => {
+          fetchData();
+        }}
+      />
     </main>
   );
 }

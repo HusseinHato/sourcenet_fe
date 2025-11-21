@@ -1,19 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  ShoppingBag,
-  TrendingUp,
-  Clock,
+  Download,
   Star,
   Package,
-  Download,
-  Eye,
-  ChevronRight,
+  TrendingUp,
   Calendar,
   Search,
   Filter,
+  Loader2,
+  ShoppingBag,
+  Clock,
+  Eye,
+  MessageSquare,
 } from 'lucide-react';
+import { api, getAuthToken } from '../../utils/api.client';
+import { DownloadModal } from '../../components/buyer/DownloadModal';
+import { ReviewModal } from '../../components/review/ReviewModal';
+import { useUserStore } from '../store/userStore';
 
 interface Purchase {
   id: string;
@@ -26,60 +32,121 @@ interface Purchase {
   category: string;
 }
 
-const mockPurchases: Purchase[] = [
-  {
-    id: 'p-001',
-    title: 'Customer Behavior Analytics',
-    seller: 'DataVault Pro',
-    price_sui: 150,
-    purchased_at: '2024-11-15',
-    status: 'completed',
-    rating: 5,
-    category: 'AI/ML',
-  },
-  {
-    id: 'p-002',
-    title: 'E-commerce Transaction Data',
-    seller: 'Commerce Insights',
-    price_sui: 200,
-    purchased_at: '2024-11-10',
-    status: 'completed',
-    rating: 4,
-    category: 'E-commerce',
-  },
-  {
-    id: 'p-003',
-    title: 'Social Media Sentiment Analysis',
-    seller: 'Social Analytics',
-    price_sui: 120,
-    purchased_at: '2024-11-08',
-    status: 'processing',
-    category: 'Social',
-  },
-  {
-    id: 'p-004',
-    title: 'Financial Market Data Feed',
-    seller: 'FinanceAPI',
-    price_sui: 160,
-    purchased_at: '2024-10-28',
-    status: 'completed',
-    rating: 5,
-    category: 'Finance',
-  },
-];
-
 export default function BuyerDashboard() {
+  const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useUserStore();
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'completed' | 'pending'>('all');
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredPurchases = mockPurchases.filter((p) => {
+  // Modal States
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+
+  const fetchPurchases = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.getBuyerPurchases();
+      // Transform API response if needed
+      // Assuming API returns { purchases: [...] } or similar
+      const fetchedPurchases = response.data.purchases || response.data.data || [];
+
+      setPurchases(fetchedPurchases.map((p: any) => ({
+        id: p.id || p.purchaseId,
+        title: p.dataPod?.title || p.title || 'Unknown Title',
+        seller: p.seller?.username || p.sellerName || 'Unknown Seller',
+        price_sui: p.priceSui || p.price_sui,
+        purchased_at: p.createdAt || p.purchased_at,
+        status: p.status,
+        rating: p.review?.rating,
+        category: p.dataPod?.category || p.category || 'Uncategorized',
+      })));
+    } catch (error: any) {
+      console.error('Failed to fetch purchases:', error);
+
+      // TEMPORARY: Use mock data if API endpoint doesn't exist (401/404)
+      // TODO: Remove this when backend implements GET /api/buyer/purchases
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        console.warn('⚠️ Buyer purchases endpoint not available, using mock data');
+        setPurchases([
+          {
+            id: 'p-001',
+            title: 'E-commerce Transaction Data 2024',
+            seller: 'DataCorp Inc.',
+            price_sui: 50,
+            purchased_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+            status: 'completed',
+            rating: 5,
+            category: 'E-commerce',
+          },
+          {
+            id: 'p-002',
+            title: 'Social Media Analytics Dataset',
+            seller: 'Analytics Pro',
+            price_sui: 35,
+            purchased_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+            status: 'completed',
+            rating: 4,
+            category: 'Social Media',
+          },
+          {
+            id: 'p-003',
+            title: 'Financial Market Data Q1 2024',
+            seller: 'FinData Solutions',
+            price_sui: 75,
+            purchased_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+            status: 'pending',
+            category: 'Finance',
+          },
+        ]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Wait for auth persistence to finish loading
+    if (isAuthLoading) {
+      console.log('Buyer: Auth still loading, waiting...');
+      return;
+    }
+
+    // Check if user is authenticated after loading is complete
+    const token = getAuthToken();
+    console.log('Buyer: Auth loaded. Token exists:', !!token, 'User exists:', !!user);
+
+    if (!token || !user) {
+      console.warn('No auth token or user found, redirecting to login');
+      router.push('/login');
+      return;
+    }
+
+    console.log('Buyer: Fetching purchases with token');
+    fetchPurchases();
+  }, [router, isAuthLoading, user]);
+
+  const filteredPurchases = purchases.filter((p) => {
     if (activeTab === 'all') return true;
     return p.status === activeTab;
   });
 
-  const totalPurchases = mockPurchases.length;
-  const completedPurchases = mockPurchases.filter((p) => p.status === 'completed').length;
-  const pendingPurchases = mockPurchases.filter((p) => p.status === 'pending' || p.status === 'processing').length;
-  const totalSpent = mockPurchases.reduce((sum, p) => sum + p.price_sui, 0);
+  const totalPurchases = purchases.length;
+  const completedPurchases = purchases.filter((p) => p.status === 'completed').length;
+  const pendingPurchases = purchases.filter((p) => p.status === 'pending' || p.status === 'processing').length;
+  const totalSpent = purchases.reduce((sum, p) => sum + p.price_sui, 0);
+
+  const handleDownloadClick = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setIsDownloadModalOpen(true);
+  };
+
+  const handleReviewClick = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setIsReviewModalOpen(true);
+  };
 
   const getRatingStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -98,7 +165,7 @@ export default function BuyerDashboard() {
       processing: 'bg-gray-50 text-gray-600 border border-gray-200',
     };
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.pending}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -134,7 +201,7 @@ export default function BuyerDashboard() {
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Total Purchases</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{totalPurchases}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '-' : totalPurchases}</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -144,7 +211,7 @@ export default function BuyerDashboard() {
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Completed</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{completedPurchases}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '-' : completedPurchases}</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -154,7 +221,7 @@ export default function BuyerDashboard() {
               </div>
             </div>
             <p className="text-gray-500 text-sm font-medium">Pending</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{pendingPurchases}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{isLoading ? '-' : pendingPurchases}</p>
           </div>
 
           <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ backgroundColor: '#474747', borderColor: '#474747' }}>
@@ -164,7 +231,7 @@ export default function BuyerDashboard() {
               </div>
             </div>
             <p className="text-gray-400 text-sm font-medium">Total Spent</p>
-            <p className="text-3xl font-bold text-white mt-1">{totalSpent} <span className="text-lg font-normal text-gray-400">SUI</span></p>
+            <p className="text-3xl font-bold text-white mt-1">{isLoading ? '-' : totalSpent} <span className="text-lg font-normal text-gray-400">SUI</span></p>
           </div>
         </div>
 
@@ -180,8 +247,8 @@ export default function BuyerDashboard() {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === tab
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
                     }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -192,7 +259,11 @@ export default function BuyerDashboard() {
 
           {/* Purchases List */}
           <div className="divide-y divide-gray-100">
-            {filteredPurchases.length > 0 ? (
+            {isLoading ? (
+              <div className="p-12 flex justify-center">
+                <Loader2 className="animate-spin text-gray-400" size={32} />
+              </div>
+            ) : filteredPurchases.length > 0 ? (
               filteredPurchases.map((purchase) => (
                 <div
                   key={purchase.id}
@@ -233,9 +304,25 @@ export default function BuyerDashboard() {
                       <div className="text-right min-w-[80px]">
                         <p className="text-lg font-bold text-gray-900">{purchase.price_sui} SUI</p>
                       </div>
-                      <button className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-[#474747] hover:text-white hover:border-[#474747] transition-all">
-                        <Download size={18} />
-                      </button>
+
+                      <div className="flex gap-2">
+                        {purchase.status === 'completed' && !purchase.rating && (
+                          <button
+                            onClick={() => handleReviewClick(purchase)}
+                            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all"
+                            title="Write a review"
+                          >
+                            <MessageSquare size={18} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDownloadClick(purchase)}
+                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-[#474747] hover:text-white hover:border-[#474747] transition-all"
+                          title="Download"
+                        >
+                          <Download size={18} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -252,6 +339,27 @@ export default function BuyerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {selectedPurchase && (
+        <>
+          <DownloadModal
+            isOpen={isDownloadModalOpen}
+            onClose={() => setIsDownloadModalOpen(false)}
+            purchaseId={selectedPurchase.id}
+            purchaseTitle={selectedPurchase.title}
+          />
+          <ReviewModal
+            isOpen={isReviewModalOpen}
+            onClose={() => setIsReviewModalOpen(false)}
+            onSuccess={() => {
+              fetchPurchases(); // Refresh to show updated rating
+            }}
+            purchaseId={selectedPurchase.id}
+            purchaseTitle={selectedPurchase.title}
+          />
+        </>
+      )}
     </main>
   );
 }
