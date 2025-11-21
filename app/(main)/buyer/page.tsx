@@ -51,7 +51,8 @@ export default function BuyerDashboard() {
       const response = await api.getBuyerPurchases();
       // Transform API response if needed
       // Assuming API returns { purchases: [...] } or similar
-      const fetchedPurchases = response.data.purchases || response.data.data || [];
+      const rawData = response.data?.purchases || response.data?.data;
+      const fetchedPurchases = Array.isArray(rawData) ? rawData : [];
 
       setPurchases(fetchedPurchases.map((p: any) => ({
         id: p.id || p.purchaseId,

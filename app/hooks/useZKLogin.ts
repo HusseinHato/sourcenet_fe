@@ -89,6 +89,7 @@ export function useZKLogin() {
     storeLogout();
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('zklogin_jwt');
     // NOTE: Do NOT clear zklogin_user_salt - it must persist across sessions
     // to ensure the same Sui address is derived for the same Google account
     setError(null);

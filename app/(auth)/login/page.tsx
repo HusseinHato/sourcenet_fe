@@ -40,6 +40,7 @@ export default function LoginPage() {
 
       sessionStorage.setItem('zklogin_ephemeral_keypair', JSON.stringify({
         publicKey: ephemeralPublicKey.toBase64(),
+        secretKey: Array.from(ephemeralKeyPair.getSecretKey()), // Store as array for JSON serialization
       }));
       sessionStorage.setItem('zklogin_randomness', randomness);
       sessionStorage.setItem('zklogin_max_epoch', maxEpoch.toString());

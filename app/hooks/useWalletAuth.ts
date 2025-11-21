@@ -31,7 +31,7 @@ export function useWalletAuth() {
 
       // Create a message to sign (timestamp-based for uniqueness)
       const message = new TextEncoder().encode(
-        `Sign in to DataMarket\nAddress: ${account.address}\nTimestamp: ${Date.now()}`
+        `Sign in to SourceNet\nAddress: ${account.address}\nTimestamp: ${Date.now()}`
       );
 
       // Sign the message with the wallet

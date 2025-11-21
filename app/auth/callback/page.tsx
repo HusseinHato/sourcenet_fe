@@ -51,10 +51,16 @@ export default function CallbackPage() {
 
         if (success) {
           setMessage('Login successful! Redirecting...');
-          // Clear session storage
-          sessionStorage.removeItem('zklogin_ephemeral_keypair');
-          sessionStorage.removeItem('zklogin_randomness');
-          sessionStorage.removeItem('zklogin_max_epoch');
+
+          // Store JWT for transaction signing
+          if (jwt) {
+            localStorage.setItem('zklogin_jwt', jwt);
+            console.log('Stored ZK Login JWT in localStorage');
+          }
+
+          // NOTE: We keep the ephemeral keypair in sessionStorage to allow transaction signing
+          // Do NOT remove them here
+
           setTimeout(() => router.push('/'), 1000);
         } else {
           setMessage('Login failed. Redirecting to login page...');

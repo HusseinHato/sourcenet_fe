@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Database, LayoutDashboard, Upload, ShoppingBag, Star, Store, Info } from 'lucide-react';
+import { Database, LayoutDashboard, Upload, ShoppingBag, Star, Store, Info, Wallet } from 'lucide-react';
 
 const CATEGORIES = ['All', 'AI/ML', 'Finance', 'Healthcare', 'Social', 'E-commerce', 'Climate'];
 
@@ -35,6 +35,7 @@ export function Sidebar() {
     { icon: LayoutDashboard, label: 'Buyer Dashboard', href: '/buyer' },
     { icon: Upload, label: 'Seller Dashboard', href: '/seller' },
     { icon: Star, label: 'Reviews', href: '/review' },
+    { icon: Wallet, label: 'Wallet', href: '/dashboard/wallet' },
   ];
 
   return (
