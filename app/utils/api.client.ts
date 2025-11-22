@@ -135,8 +135,7 @@ export const api = {
   // Buyer
   async createPurchase(data: {
     datapod_id: string;
-    buyer_address: string;
-    buyer_public_key: string;
+    payment_tx_digest: string;
   }) {
     return apiClient.post('/buyer/purchase', data);
   },

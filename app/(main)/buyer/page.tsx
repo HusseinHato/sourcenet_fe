@@ -27,7 +27,7 @@ interface Purchase {
   seller: string;
   price_sui: number;
   purchased_at: string;
-  status: 'completed' | 'pending' | 'processing';
+  status: 'completed' | 'pending' | 'processing' | 'pending_payment';
   rating?: number;
   category: string;
 }
@@ -49,60 +49,23 @@ export default function BuyerDashboard() {
     setIsLoading(true);
     try {
       const response = await api.getBuyerPurchases();
-      // Transform API response if needed
-      // Assuming API returns { purchases: [...] } or similar
-      const rawData = response.data?.purchases || response.data?.data;
+      // Transform API response
+      const rawData = response.data?.data?.purchases || [];
       const fetchedPurchases = Array.isArray(rawData) ? rawData : [];
 
       setPurchases(fetchedPurchases.map((p: any) => ({
-        id: p.id || p.purchaseId,
-        title: p.dataPod?.title || p.title || 'Unknown Title',
-        seller: p.seller?.username || p.sellerName || 'Unknown Seller',
-        price_sui: p.priceSui || p.price_sui,
-        purchased_at: p.createdAt || p.purchased_at,
+        id: p.purchaseRequestId, // Use purchaseRequestId for lookups
+        title: p.datapod?.title || 'Unknown Title',
+        seller: p.datapod?.seller?.username || 'Unknown Seller',
+        price_sui: Number(p.priceSui),
+        purchased_at: p.createdAt,
         status: p.status,
-        rating: p.review?.rating,
-        category: p.dataPod?.category || p.category || 'Uncategorized',
+        rating: p.review?.rating, // Assuming review might be attached or fetched separately
+        category: p.datapod?.category || 'Uncategorized',
       })));
     } catch (error: any) {
       console.error('Failed to fetch purchases:', error);
-
-      // TEMPORARY: Use mock data if API endpoint doesn't exist (401/404)
-      // TODO: Remove this when backend implements GET /api/buyer/purchases
-      if (error.response?.status === 401 || error.response?.status === 404) {
-        console.warn('⚠️ Buyer purchases endpoint not available, using mock data');
-        setPurchases([
-          {
-            id: 'p-001',
-            title: 'E-commerce Transaction Data 2024',
-            seller: 'DataCorp Inc.',
-            price_sui: 50,
-            purchased_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-            status: 'completed',
-            rating: 5,
-            category: 'E-commerce',
-          },
-          {
-            id: 'p-002',
-            title: 'Social Media Analytics Dataset',
-            seller: 'Analytics Pro',
-            price_sui: 35,
-            purchased_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-            status: 'completed',
-            rating: 4,
-            category: 'Social Media',
-          },
-          {
-            id: 'p-003',
-            title: 'Financial Market Data Q1 2024',
-            seller: 'FinData Solutions',
-            price_sui: 75,
-            purchased_at: new Date(Date.now() - 86400000 * 1).toISOString(),
-            status: 'pending',
-            category: 'Finance',
-          },
-        ]);
-      }
+      // Fallback or empty state handled by UI
     } finally {
       setIsLoading(false);
     }
@@ -111,32 +74,31 @@ export default function BuyerDashboard() {
   useEffect(() => {
     // Wait for auth persistence to finish loading
     if (isAuthLoading) {
-      console.log('Buyer: Auth still loading, waiting...');
       return;
     }
 
     // Check if user is authenticated after loading is complete
     const token = getAuthToken();
-    console.log('Buyer: Auth loaded. Token exists:', !!token, 'User exists:', !!user);
 
     if (!token || !user) {
-      console.warn('No auth token or user found, redirecting to login');
       router.push('/login');
       return;
     }
 
-    console.log('Buyer: Fetching purchases with token');
     fetchPurchases();
   }, [router, isAuthLoading, user]);
 
   const filteredPurchases = purchases.filter((p) => {
     if (activeTab === 'all') return true;
+    if (activeTab === 'pending') {
+      return p.status === 'pending' || p.status === 'processing' || p.status === 'pending_payment';
+    }
     return p.status === activeTab;
   });
 
   const totalPurchases = purchases.length;
   const completedPurchases = purchases.filter((p) => p.status === 'completed').length;
-  const pendingPurchases = purchases.filter((p) => p.status === 'pending' || p.status === 'processing').length;
+  const pendingPurchases = purchases.filter((p) => p.status === 'pending' || p.status === 'processing' || p.status === 'pending_payment').length;
   const totalSpent = purchases.reduce((sum, p) => sum + p.price_sui, 0);
 
   const handleDownloadClick = (purchase: Purchase) => {
@@ -160,14 +122,18 @@ export default function BuyerDashboard() {
   };
 
   const getStatusBadge = (status: string) => {
-    const styles = {
+    const styles: Record<string, string> = {
       completed: 'bg-gray-100 text-gray-800 border border-gray-200',
       pending: 'bg-gray-50 text-gray-600 border border-gray-200',
       processing: 'bg-gray-50 text-gray-600 border border-gray-200',
+      pending_payment: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
     };
+
+    const displayStatus = status === 'pending_payment' ? 'Pending' : status.charAt(0).toUpperCase() + status.slice(1);
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.pending}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || styles.pending}`}>
+        {displayStatus}
       </span>
     );
   };

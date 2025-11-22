@@ -93,9 +93,9 @@ export default function WalletPage() {
 
         try {
             const jwt = localStorage.getItem('zklogin_jwt');
-            const ephemeralKeyPairStr = sessionStorage.getItem('zklogin_ephemeral_keypair');
-            const randomness = sessionStorage.getItem('zklogin_randomness');
-            const maxEpoch = sessionStorage.getItem('zklogin_max_epoch');
+            const ephemeralKeyPairStr = localStorage.getItem('zklogin_ephemeral_keypair');
+            const randomness = localStorage.getItem('zklogin_randomness');
+            const maxEpoch = localStorage.getItem('zklogin_max_epoch');
             const salt = getUserSalt();
 
             console.log('handleSend: JWT from storage:', jwt ? 'Found' : 'Missing');

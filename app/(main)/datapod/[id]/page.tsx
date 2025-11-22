@@ -310,6 +310,7 @@ export default function DataDetailPage() {
           }}
           datapod={{
             id: dataset.id,
+            datapodId: dataset.datapodId,
             title: dataset.title,
             price_sui: dataset.price,
             seller_name: dataset.seller,

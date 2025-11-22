@@ -38,12 +38,13 @@ export default function LoginPage() {
       const randomness = generateRandomness();
       const nonce = generateNonce(ephemeralPublicKey, maxEpoch, randomness);
 
-      sessionStorage.setItem('zklogin_ephemeral_keypair', JSON.stringify({
+      // Store in localStorage to ensure persistence across tabs/redirects
+      localStorage.setItem('zklogin_ephemeral_keypair', JSON.stringify({
         publicKey: ephemeralPublicKey.toBase64(),
-        secretKey: Array.from(ephemeralKeyPair.getSecretKey()), // Store as array for JSON serialization
+        secretKey: Array.from(ephemeralKeyPair.getSecretKey()),
       }));
-      sessionStorage.setItem('zklogin_randomness', randomness);
-      sessionStorage.setItem('zklogin_max_epoch', maxEpoch.toString());
+      localStorage.setItem('zklogin_randomness', randomness);
+      localStorage.setItem('zklogin_max_epoch', maxEpoch.toString());
 
       const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       googleAuthUrl.searchParams.append('client_id', clientId);

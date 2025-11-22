@@ -10,6 +10,7 @@ interface PurchaseModalProps {
     onSuccess: () => void;
     datapod: {
         id: string;
+        datapodId: string;
         title: string;
         price_sui: number;
         seller_name: string;
@@ -21,6 +22,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
     const [step, setStep] = useState<'confirm' | 'processing' | 'success'>('confirm');
+    const [privateKey, setPrivateKey] = useState<string | null>(null);
 
     const handlePurchase = async () => {
         setIsProcessing(true);
@@ -39,116 +41,137 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
             await executeTransaction(sponsorAddress, datapod.price_sui, async (digest) => {
                 // 2. Notify Backend on Success
                 try {
-                    await api.createPurchase({
-                        datapod_id: datapod.id,
-                        buyer_address: address,
-                        buyer_public_key: address, // Using address as public key for now as it's required by API
+                    const response = await api.createPurchase({
+                        datapod_id: datapod.datapodId,
+                        payment_tx_digest: digest,
                     });
 
+                    if (response.data && response.data.private_key) {
+                        setPrivateKey(response.data.private_key);
+                    }
+
                     setStep('success');
-                    setTimeout(() => {
-                        onSuccess();
-                        onClose();
-                        setStep('confirm');
-                    }, 2000);
+                    // Do not auto-close, user needs to see the private key
                 } catch (apiErr: any) {
                     console.error('Backend notification failed:', apiErr);
                     // Transaction succeeded but backend update failed
-                    // We should probably show a specific error or handle this case
                     setError('Payment successful but failed to update order status. Please contact support.');
                     setStep('confirm');
                 }
             });
-
         } catch (err: any) {
             console.error('Purchase failed:', err);
-            setError(err.message || 'Transaction failed. Please try again.');
+            setError(err.message || 'Failed to complete purchase');
             setStep('confirm');
         } finally {
             setIsProcessing(false);
         }
     };
 
-    const isLoading = isProcessing || isTxLoading;
+    if (!isOpen) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Confirm Purchase" size="md">
-            {step === 'confirm' && (
-                <div className="space-y-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Item Details</h4>
-                        <p className="text-lg font-semibold text-gray-900">{datapod.title}</p>
-                        <p className="text-sm text-gray-600">Sold by {datapod.seller_name}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                        <span className="text-base font-medium text-gray-900">Total Price</span>
-                        <span className="text-2xl font-bold text-gray-900">{datapod.price_sui} SUI</span>
-                    </div>
-
-                    {error && (
-                        <div className="rounded-md bg-red-50 p-4">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
-                                </div>
-                                <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-red-800">Purchase failed</h3>
-                                    <div className="mt-2 text-sm text-red-700">
-                                        <p>{error}</p>
-                                    </div>
-                                </div>
+        <Modal isOpen={isOpen} onClose={onClose} title="Confirm Purchase">
+            <div className="space-y-6">
+                {step === 'confirm' && (
+                    <>
+                        <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Item</span>
+                                <span className="font-medium text-gray-900">{datapod.title}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Price</span>
+                                <span className="font-medium text-gray-900">{datapod.price_sui} SUI</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Seller</span>
+                                <span className="font-medium text-gray-900">{datapod.seller_name}</span>
                             </div>
                         </div>
-                    )}
 
-                    <div className="flex gap-3">
+                        {error && (
+                            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handlePurchase}
+                                disabled={isProcessing || isTxLoading}
+                                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isProcessing || isTxLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Wallet className="h-4 w-4" />
+                                        Confirm Payment
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </>
+                )}
+
+                {step === 'processing' && (
+                    <div className="text-center py-8 space-y-4">
+                        <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+                        <div>
+                            <h3 className="text-lg font-medium text-gray-900">Processing Transaction</h3>
+                            <p className="text-sm text-gray-500 mt-1">Please wait while we confirm your payment...</p>
+                        </div>
+                    </div>
+                )}
+
+                {step === 'success' && (
+                    <div className="text-center py-8 space-y-6">
+                        <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                            <Check className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-medium text-gray-900">Purchase Successful!</h3>
+                            <p className="text-sm text-gray-500 mt-1">Your datapod is now available.</p>
+                        </div>
+
+                        {privateKey && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                                <h4 className="text-sm font-bold text-yellow-800 mb-2 flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4" />
+                                    IMPORTANT: Save this Key
+                                </h4>
+                                <p className="text-xs text-yellow-700 mb-3">
+                                    This private key is required to decrypt and access your datapod. We do not store this key. If you lose it, you lose access to the data.
+                                </p>
+                                <div className="bg-white border border-yellow-200 rounded p-2 font-mono text-xs break-all text-gray-800 select-all">
+                                    {privateKey}
+                                </div>
+                            </div>
+                        )}
+
                         <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#474747]"
+                            onClick={() => {
+                                onSuccess();
+                                onClose();
+                            }}
+                            className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
                         >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handlePurchase}
-                            disabled={isLoading || !address}
-                            className="flex-1 inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-[#474747] border border-transparent rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#474747] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                                    Processing...
-                                </>
-                            ) : (
-                                <>
-                                    <Wallet className="mr-2 h-4 w-4" />
-                                    Confirm Payment
-                                </>
-                            )}
+                            Done
                         </button>
                     </div>
-                </div>
-            )}
-
-            {step === 'processing' && (
-                <div className="text-center py-8">
-                    <Loader2 className="animate-spin mx-auto h-12 w-12 text-[#474747] mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">Processing Transaction</h3>
-                    <p className="text-sm text-gray-500 mt-2">Please wait while we confirm your purchase on the blockchain...</p>
-                </div>
-            )}
-
-            {step === 'success' && (
-                <div className="text-center py-8">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                        <Check className="h-6 w-6 text-green-600" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900">Purchase Successful!</h3>
-                    <p className="text-sm text-gray-500 mt-2">You can now download this data pod from your dashboard.</p>
-                </div>
-            )}
+                )}
+            </div>
         </Modal>
     );
 };
