@@ -173,5 +173,8 @@ export const api = {
   },
   async updateProfile(data: any) {
     return apiClient.put('/auth/profile', data);
+  },
+  async login(jwt: string) {
+    return apiClient.post('/auth/login', { jwt });
   }
 };

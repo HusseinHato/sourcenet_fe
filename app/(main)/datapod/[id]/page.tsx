@@ -1,47 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import {
   Star,
-  Download,
   Share2,
   Eye,
-  Database,
-  Calendar,
   User,
-  FileText,
-  TrendingUp,
-  MessageSquare,
   ThumbsUp,
   ShoppingCart,
-  Info,
-  CheckCircle,
   ChevronRight,
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { api } from '../../utils/api.client';
-import { PurchaseModal } from '../../components/marketplace/PurchaseModal';
+import { api } from '../../../utils/api.client';
+import { PurchaseModal } from '../../../components/marketplace/PurchaseModal';
 
 type ReviewRating = 1 | 2 | 3 | 4 | 5;
 
 interface DatasetDetail {
   id: string;
+  datapodId: string;
   title: string;
   description: string;
   seller: string;
   price: number;
   category: string;
-  fileSize: string;
-  records: number;
-  updateFrequency: string;
   createdAt: string;
   downloads: number;
   rating: number;
-  reviews: number;
+  reviewsCount: number;
   tags: string[];
-  features: string[];
+  status: string;
+  blobId: string;
+  kioskId: string;
 }
 
 interface Review {
@@ -67,8 +59,8 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
 );
 
 export default function DataDetailPage() {
-  const searchParams = useSearchParams();
-  const id = searchParams.get('id') || 'dp-001'; // Default ID for testing if none provided
+  const params = useParams();
+  const id = params.id as string;
 
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
   const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
@@ -78,82 +70,42 @@ export default function DataDetailPage() {
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
 
   const fetchData = async () => {
+    if (!id) return;
     setIsLoading(true);
     try {
-      // In a real app, we would fetch by ID
-      // const response = await api.getDataPodDetails(id);
-      // const data = response.data.data;
+      const response = await api.getDataPodDetails(id);
+      const data = response.data.data;
 
-      // For now, simulating API call or using mock if API fails/not ready
-      // We'll try to fetch, if it fails, we use mock data to ensure UI works
-      try {
-        const response = await api.getDataPodDetails(id);
-        const data = response.data.data;
+      console.log("data", data);
+
+      if (data) {
         setDataset({
-          id: data.datapodId,
+          id: data.id,
+          datapodId: data.datapodId,
           title: data.title,
           description: data.description,
           seller: data.seller?.username || 'Unknown Seller',
-          price: data.priceSui,
+          price: Number(data.priceSui),
           category: data.category,
-          fileSize: 'Unknown', // Backend needs to provide this
-          records: 0, // Backend needs to provide this
-          updateFrequency: 'Unknown',
           createdAt: data.publishedAt,
           downloads: data.totalSales,
-          rating: data.averageRating || 0,
-          reviews: data.reviews?.length || 0,
-          tags: [], // Backend needs to provide this
-          features: [], // Backend needs to provide this
+          rating: Number(data.averageRating) || 0,
+          reviewsCount: data.reviews?.length || 0,
+          tags: data.tags || [],
+          status: data.status,
+          blobId: data.blobId,
+          kioskId: data.kioskId,
         });
+
         setReviews(data.reviews?.map((r: any) => ({
           id: r.id,
-          buyer: 'Anonymous', // Reviewer name might not be public
+          buyer: 'Anonymous',
           rating: r.rating,
           title: 'Review',
           comment: r.comment,
           date: r.createdAt,
           helpful: 0,
         })) || []);
-      } catch (err) {
-        console.warn('API fetch failed, using mock data', err);
-        // Fallback to mock data
-        setDataset({
-          id: 'd-001',
-          title: 'Customer Behavior Analytics',
-          description:
-            'Comprehensive dataset containing detailed customer behavior patterns, purchase history, and engagement metrics. Perfect for machine learning models, business intelligence, and market analysis. This dataset includes over 1 million records of anonymized user interactions across multiple touchpoints.',
-          seller: 'DataVault Pro',
-          price: 150,
-          category: 'AI/ML',
-          fileSize: '2.5 GB',
-          records: 1000000,
-          updateFrequency: 'Weekly',
-          createdAt: '2024-01-15',
-          downloads: 2450,
-          rating: 4.8,
-          reviews: 127,
-          tags: ['customer-data', 'behavior', 'analytics', 'ecommerce', 'ml-ready'],
-          features: [
-            'Customer Demographics',
-            'Purchase History',
-            'Engagement Metrics',
-            'Behavioral Patterns',
-            'Geographic Data',
-            'Temporal Analysis',
-          ],
-        });
-        setReviews([
-          {
-            id: 'r-001',
-            buyer: 'John Doe',
-            rating: 5,
-            title: 'Excellent Data Quality',
-            comment: 'The dataset provided was comprehensive and well-organized. Highly recommend for ML projects.',
-            date: '2024-11-10',
-            helpful: 24,
-          },
-        ]);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -220,7 +172,7 @@ export default function DataDetailPage() {
                     <div className="flex items-center gap-1.5 text-sm">
                       <StarRating rating={dataset.rating} size={14} />
                       <span className="font-medium text-gray-900">{dataset.rating}</span>
-                      <span className="text-gray-500">({dataset.reviews} reviews)</span>
+                      <span className="text-gray-500">({dataset.reviewsCount} reviews)</span>
                     </div>
                   </div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{dataset.title}</h1>
@@ -238,38 +190,6 @@ export default function DataDetailPage() {
 
               <p className="text-gray-600 leading-relaxed mb-8">{dataset.description}</p>
 
-              {/* Key Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-y border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">File Size</p>
-                  <div className="flex items-center gap-2">
-                    <Database size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{dataset.fileSize}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Records</p>
-                  <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{dataset.records.toLocaleString()}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Updates</p>
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{dataset.updateFrequency}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Downloads</p>
-                  <div className="flex items-center gap-2">
-                    <Download size={16} className="text-gray-400" />
-                    <span className="font-semibold text-gray-900">{dataset.downloads.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Tags */}
               <div className="mt-6 flex flex-wrap gap-2">
                 {dataset.tags.map((tag) => (
@@ -279,22 +199,6 @@ export default function DataDetailPage() {
                   >
                     #{tag}
                   </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Features Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Dataset Features</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {dataset.features.map((feature, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
-                  >
-                    <CheckCircle size={18} className="text-[#474747] flex-shrink-0" />
-                    <span className="text-sm font-medium text-gray-700">{feature}</span>
-                  </div>
                 ))}
               </div>
             </div>
@@ -402,7 +306,6 @@ export default function DataDetailPage() {
           isOpen={isPurchaseModalOpen}
           onClose={() => setIsPurchaseModalOpen(false)}
           onSuccess={() => {
-            // Handle success (e.g., redirect to buyer dashboard or show success message)
             alert('Purchase successful! You can now download the dataset from your dashboard.');
           }}
           datapod={{
