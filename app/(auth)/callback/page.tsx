@@ -27,8 +27,35 @@ export default function CallbackPage() {
           return;
         }
 
-        // Send JWT to backend (which handles salt and address derivation)
-        const success = await login(jwt);
+        setMessage('Deriving Sui address...');
+
+        // Get user salt (persistent across sessions)
+        const userSalt = getUserSalt();
+        console.log('User salt:', userSalt, 'Type:', typeof userSalt, 'Length:', userSalt.length);
+
+        // Derive the Sui address from JWT and user salt
+        // This returns a hex format address (0x...)
+        let address: string;
+        try {
+          address = jwtToAddress(jwt, userSalt);
+          console.log('Derived address:', address);
+        } catch (error) {
+          console.error('Error deriving address:', error);
+          throw error;
+        }
+
+        if (!address) {
+          setMessage('Failed to derive address. Redirecting to login...');
+          console.error('Failed to derive address from JWT');
+          setTimeout(() => router.push('/login'), 2000);
+          return;
+        }
+
+        setMessage('Verifying with backend...');
+
+        // Send JWT and address to backend for verification
+        // Backend will verify JWT and return user data + token
+        const success = await login(jwt, address);
 
         if (success) {
           setMessage('Login successful! Redirecting...');
