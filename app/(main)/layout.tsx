@@ -12,7 +12,9 @@ export default function MainLayout({
     return (
         <AuthProvider>
             <div className="relative min-h-screen w-full bg-white">
-                <Navbar />
+                <Suspense fallback={<div className="h-20 w-full bg-white border-b border-gray-200" />}>
+                    <Navbar />
+                </Suspense>
                 <Suspense fallback={<div className="w-64 fixed h-screen bg-[#F5F5F5] hidden md:block" />}>
                     <Sidebar />
                 </Suspense>

@@ -25,6 +25,7 @@ function HomeContent() {
   const page = Number(searchParams.get('page')) || 1;
   const selectedCategory = searchParams.get('category') || 'All';
   const sortBy = searchParams.get('sort') || 'trending';
+  const searchQuery = searchParams.get('search') || '';
   const limit = 15;
 
   const [datapods, setDatapods] = useState<any[]>([]);
@@ -46,6 +47,7 @@ function HomeContent() {
           limit,
           category: selectedCategory === 'All' ? undefined : selectedCategory,
           sort_by: apiSort,
+          search: searchQuery,
         });
 
         const data = response.data;
@@ -80,7 +82,7 @@ function HomeContent() {
     };
 
     fetchData();
-  }, [page, selectedCategory, sortBy]);
+  }, [page, selectedCategory, sortBy, searchQuery]);
 
   const totalPages = Math.ceil(total / limit);
 

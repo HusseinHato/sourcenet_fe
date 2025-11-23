@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motio
 import { Menu, X, Search, Copy, Check, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUserStore } from '@/app/(main)/store/userStore';
 import { formatAddress } from '@/app/utils/format.utils';
 import { clearAuthToken } from '@/app/utils/api.client';
@@ -23,11 +23,12 @@ const client = new SuiClient({ url: rpcUrl });
 
 export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, logout: storeLogout } = useUserStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [realTimeBalance, setRealTimeBalance] = useState<string | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
@@ -59,6 +60,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     setMousePosition({ x, y });
     mouseX.set(x);
     mouseY.set(y);
+  };
+
+  const handleSearch = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (searchQuery) {
+      params.set('search', searchQuery);
+    } else {
+      params.delete('search');
+    }
+    params.set('page', '1'); // Reset to first page on new search
+    router.push(`/?${params.toString()}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   // Fetch real-time balance from blockchain
@@ -151,8 +169,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
           // PERBAIKAN DI SINI: Menggunakan palet warna asli (#CECECE) bukan bg-white
           // Menambahkan border-b yang halus dan shadow dinamis
           className={`relative w-full border-b transition-all duration-500 ${isScrolled
-              ? 'bg-[#CECECE]/85 backdrop-blur-xl border-[#b0b0b0]/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]'
-              : 'bg-[#CECECE]/60 backdrop-blur-lg border-white/20 shadow-none'
+            ? 'bg-[#CECECE]/85 backdrop-blur-xl border-[#b0b0b0]/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]'
+            : 'bg-[#CECECE]/60 backdrop-blur-lg border-white/20 shadow-none'
             }`}
         >
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -180,7 +198,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
           </div>
 
-          <div className="mx-auto flex max-w-[1400px] items-center gap-4 md:gap-6 px-4 md:pl-[13rem] md:pr-12 py-4 relative z-10">
+          <div className="flex w-full items-center gap-6 md:gap-6 px-4 pl-6 md:pl-15 py-4 relative z-10">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -204,12 +222,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               </Link>
             </motion.div>
 
-            <div className="hidden md:flex flex-1 justify-center">
-              <div className="relative w-full max-w-4xl group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#474747]/60 group-focus-within:text-[#353535] transition-colors" />
+            <div className="absolute inset-0 hidden md:flex items-center justify-start pointer-events-none md:pl-[17.5rem]">
+              <div className="relative w-full max-w-4xl group pointer-events-auto">
+                <Search
+                  onClick={handleSearch}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#474747]/60 group-focus-within:text-[#353535] transition-colors cursor-pointer hover:text-[#353535]"
+                />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   type="text"
                   placeholder="Search datasets"
                   // Style input diperbaiki: Menggunakan background F7F7F7 asli tapi semi-transparan + inset shadow
@@ -218,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-3 ml-auto">
+            <div className="hidden md:flex items-center gap-6 ml-auto pr-4">
               {user ? (
                 <>
                   <motion.button
