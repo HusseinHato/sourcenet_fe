@@ -5,6 +5,7 @@ import { Modal } from '../common/Modal';
 import { apiClient } from '../../utils/api.client';
 import { Download, AlertCircle, Loader2, FileText, Lock } from 'lucide-react';
 import { decryptFile } from '../../utils/encryption';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DownloadModalProps {
     isOpen: boolean;
@@ -153,70 +154,125 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Download Data Pod" size="md">
-            <div className="space-y-6 text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-                    {isDecrypting ? (
-                        <Lock className="h-6 w-6 text-blue-600 animate-pulse" />
-                    ) : (
-                        <FileText className="h-6 w-6 text-blue-600" />
-                    )}
+            <div className="space-y-6">
+                {/* Icon Section */}
+                <div className="flex justify-center">
+                    <motion.div
+                        className="flex items-center justify-center h-16 w-16 rounded-full bg-[#F5F5F5] border border-[#E5E5E5]"
+                        animate={isDecrypting ? { scale: [1, 1.05, 1] } : {}}
+                        transition={{ duration: 1, repeat: isDecrypting ? Infinity : 0 }}
+                    >
+                        <AnimatePresence mode="wait">
+                            {isDecrypting ? (
+                                <motion.div
+                                    key="lock"
+                                    initial={{ scale: 0, rotate: -180 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    exit={{ scale: 0, rotate: 180 }}
+                                >
+                                    <Lock className="h-7 w-7 text-[#353535]" />
+                                </motion.div>
+                            ) : isDownloading ? (
+                                <motion.div
+                                    key="loader"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1, rotate: 360 }}
+                                    exit={{ scale: 0 }}
+                                    transition={{ rotate: { duration: 1, repeat: Infinity, ease: 'linear' } }}
+                                >
+                                    <Loader2 className="h-7 w-7 text-[#353535]" />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="file"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0 }}
+                                >
+                                    <FileText className="h-7 w-7 text-[#353535]" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
                 </div>
 
-                <div>
-                    <h3 className="text-lg font-medium text-gray-900">{purchaseTitle}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                {/* Title & Status */}
+                <div className="text-center">
+                    <h3 className="text-lg font-bold text-[#353535]">{purchaseTitle}</h3>
+                    <motion.p
+                        key={isDownloading ? 'downloading' : isDecrypting ? 'decrypting' : 'ready'}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-sm text-[#919191] mt-2"
+                    >
                         {isDownloading && 'Downloading encrypted file...'}
                         {isDecrypting && 'Decrypting your data securely...'}
                         {!isDownloading && !isDecrypting && !error && !showKeyInput && 'Your file is ready to be securely downloaded.'}
                         {showKeyInput && !isDownloading && !isDecrypting && 'Please enter your decryption key to proceed.'}
-                    </p>
+                    </motion.p>
                 </div>
 
-                {showKeyInput && (
-                    <div className="text-left">
-                        <label htmlFor="manualKey" className="block text-sm font-medium text-gray-700">
-                            Decryption Key
-                        </label>
-                        <div className="mt-1">
-                            <textarea
-                                id="manualKey"
-                                rows={3}
-                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                                placeholder="Paste your private key here..."
-                                value={manualKey}
-                                onChange={(e) => setManualKey(e.target.value)}
-                            />
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                            This key was provided to you when you purchased the Data Pod.
-                        </p>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="rounded-md bg-red-50 p-4 text-left">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                {/* Manual Key Input */}
+                <AnimatePresence>
+                    {showKeyInput && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="space-y-2">
+                                <label htmlFor="manualKey" className="block text-sm font-bold text-[#353535]">
+                                    Decryption Key
+                                </label>
+                                <textarea
+                                    id="manualKey"
+                                    rows={3}
+                                    className="w-full px-4 py-3 text-sm border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#353535] focus:border-transparent bg-[#F5F5F5] text-[#353535] placeholder-[#919191] transition-all"
+                                    placeholder="Paste your private key here..."
+                                    value={manualKey}
+                                    onChange={(e) => setManualKey(e.target.value)}
+                                />
+                                <p className="text-xs text-[#919191] flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    This key was provided when you purchased the Data Pod.
+                                </p>
                             </div>
-                            <div className="ml-3">
-                                <h3 className="text-sm font-medium text-red-800">Error</h3>
-                                <div className="mt-2 text-sm text-red-700">
-                                    <p>{error}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Error Message */}
+                <AnimatePresence>
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="rounded-xl bg-red-50 border border-red-200 p-4"
+                        >
+                            <div className="flex gap-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <h3 className="text-sm font-bold text-red-800">Error</h3>
+                                    <p className="mt-1 text-sm text-red-700">{error}</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                <div className="mt-5 sm:mt-6">
-                    <button
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                    <motion.button
                         type="button"
                         onClick={handleDownload}
                         disabled={isDownloading || isDecrypting}
-                        className={`w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white sm:text-sm ${isDownloading || isDecrypting
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-[#474747] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#474747]'
+                        whileHover={!isDownloading && !isDecrypting ? { scale: 1.02 } : {}}
+                        whileTap={!isDownloading && !isDecrypting ? { scale: 0.98 } : {}}
+                        className={`w-full inline-flex justify-center items-center rounded-xl px-6 py-3 text-sm font-bold text-white shadow-lg transition-all ${isDownloading || isDecrypting
+                                ? 'bg-[#919191] cursor-not-allowed'
+                                : 'bg-[#353535] hover:bg-[#2a2a2a]'
                             }`}
                     >
                         {isDownloading ? (
@@ -235,16 +291,20 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                                 {showKeyInput ? 'Decrypt & Download' : 'Download Now'}
                             </>
                         )}
-                    </button>
+                    </motion.button>
 
                     {!isDownloading && !isDecrypting && (
-                        <button
+                        <motion.button
                             type="button"
                             onClick={onClose}
-                            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#474747] sm:text-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full inline-flex justify-center rounded-xl border border-[#E5E5E5] px-6 py-3 bg-white text-sm font-medium text-[#474747] hover:bg-[#F5F5F5] transition-all"
                         >
                             Cancel
-                        </button>
+                        </motion.button>
                     )}
                 </div>
             </div>

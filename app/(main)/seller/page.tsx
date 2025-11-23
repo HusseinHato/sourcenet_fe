@@ -84,7 +84,7 @@ export default function SellerDashboard() {
       const statsData = statsResponse.data.data || statsResponse.data || {};
       const totalSalesCount = pods.reduce((sum: number, pod: any) => sum + parseInt(pod.totalSales || 0), 0);
       const totalRevenueAmount = pods.reduce((sum: number, pod: any) => sum + (parseFloat(pod.priceSui || 0) * parseInt(pod.totalSales || 0)), 0);
-      
+
       setStats({
         totalSales: statsData.totalSales !== undefined ? statsData.totalSales : totalSalesCount,
         totalRevenue: statsData.totalRevenue !== undefined ? statsData.totalRevenue : totalRevenueAmount,

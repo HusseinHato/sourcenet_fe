@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { api } from '../../utils/api.client';
-import { Loader2, AlertCircle, Check, Wallet } from 'lucide-react';
+import { Loader2, AlertCircle, Check, Wallet, Copy } from 'lucide-react';
 import { useZKLogin } from '../../hooks/useZKLogin';
+import { savePrivateKey } from '../../utils/keyStorage';
+import { motion } from 'framer-motion';
 
 interface PurchaseModalProps {
     isOpen: boolean;
@@ -23,6 +25,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
     const [error, setError] = useState('');
     const [step, setStep] = useState<'confirm' | 'processing' | 'success'>('confirm');
     const [privateKey, setPrivateKey] = useState<string | null>(null);
+    const [purchaseRequestId, setPurchaseRequestId] = useState<string | null>(null);
+    const [keyCopied, setKeyCopied] = useState(false);
 
     const handlePurchase = async () => {
         setIsProcessing(true);
@@ -47,7 +51,17 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
                     });
 
                     if (response.data && response.data.private_key) {
-                        setPrivateKey(response.data.private_key);
+                        const privateKeyValue = response.data.private_key;
+                        const purchaseId = response.data.purchase_request_id || response.data.id;
+
+                        setPrivateKey(privateKeyValue);
+                        setPurchaseRequestId(purchaseId);
+
+                        // Auto-save private key to localStorage
+                        if (purchaseId) {
+                            savePrivateKey(purchaseId, privateKeyValue);
+                            console.log('Private key auto-saved to localStorage for purchase:', purchaseId);
+                        }
                     }
 
                     setStep('success');
@@ -65,6 +79,14 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
             setStep('confirm');
         } finally {
             setIsProcessing(false);
+        }
+    };
+
+    const handleCopyKey = () => {
+        if (privateKey) {
+            navigator.clipboard.writeText(privateKey);
+            setKeyCopied(true);
+            setTimeout(() => setKeyCopied(false), 2000);
         }
     };
 
@@ -104,10 +126,12 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
                             >
                                 Cancel
                             </button>
-                            <button
+                            <motion.button
                                 onClick={handlePurchase}
                                 disabled={isProcessing || isTxLoading}
-                                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#353535] rounded-lg hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition-all"
                             >
                                 {isProcessing || isTxLoading ? (
                                     <>
@@ -120,56 +144,100 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
                                         Confirm Payment
                                     </>
                                 )}
-                            </button>
+                            </motion.button>
                         </div>
                     </>
                 )}
 
                 {step === 'processing' && (
-                    <div className="text-center py-8 space-y-4">
-                        <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-center py-8 space-y-4"
+                    >
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        >
+                            <Loader2 className="h-12 w-12 text-[#353535] mx-auto" />
+                        </motion.div>
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900">Processing Transaction</h3>
-                            <p className="text-sm text-gray-500 mt-1">Please wait while we confirm your payment...</p>
+                            <h3 className="text-lg font-bold text-[#353535]">Processing Transaction</h3>
+                            <p className="text-sm text-[#919191] mt-1">Please wait while we confirm your payment...</p>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {step === 'success' && (
-                    <div className="text-center py-8 space-y-6">
-                        <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                            <Check className="h-6 w-6 text-green-600" />
-                        </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-8 space-y-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                            className="h-16 w-16 bg-[#353535] rounded-full flex items-center justify-center mx-auto shadow-lg"
+                        >
+                            <Check className="h-8 w-8 text-white" />
+                        </motion.div>
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900">Purchase Successful!</h3>
-                            <p className="text-sm text-gray-500 mt-1">Your datapod is now available.</p>
+                            <h3 className="text-xl font-bold text-[#353535]">Purchase Successful!</h3>
+                            <p className="text-sm text-[#919191] mt-2">Your datapod is now available for download.</p>
                         </div>
 
                         {privateKey && (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
-                                <h4 className="text-sm font-bold text-yellow-800 mb-2 flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4" />
-                                    IMPORTANT: Save this Key
-                                </h4>
-                                <p className="text-xs text-yellow-700 mb-3">
-                                    This private key is required to decrypt and access your datapod. We do not store this key. If you lose it, you lose access to the data.
-                                </p>
-                                <div className="bg-white border border-yellow-200 rounded p-2 font-mono text-xs break-all text-gray-800 select-all">
-                                    {privateKey}
+                            <div className="bg-[#F5F5F5] border border-[#CECECE] rounded-xl p-5 text-left space-y-3">
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="h-5 w-5 text-[#353535] mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-[#353535] mb-1">
+                                            Private Key Auto-Saved
+                                        </h4>
+                                        <p className="text-xs text-[#919191] leading-relaxed">
+                                            Your decryption key has been automatically saved. You can download your datapod immediately without entering the key manually.
+                                        </p>
+                                    </div>
                                 </div>
+
+                                <div className="relative">
+                                    <div className="bg-white border border-[#E5E5E5] rounded-lg p-3 font-mono text-xs break-all text-[#353535] select-all pr-12">
+                                        {privateKey}
+                                    </div>
+                                    <motion.button
+                                        onClick={handleCopyKey}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="absolute right-2 top-2 p-2 rounded-lg bg-[#F5F5F5] hover:bg-[#EAEAEA] transition-colors"
+                                        title="Copy to clipboard"
+                                    >
+                                        {keyCopied ? (
+                                            <Check className="h-4 w-4 text-[#353535]" />
+                                        ) : (
+                                            <Copy className="h-4 w-4 text-[#919191]" />
+                                        )}
+                                    </motion.button>
+                                </div>
+
+                                <p className="text-xs text-[#919191] italic">
+                                    💡 Tip: You can also copy this key for backup purposes.
+                                </p>
                             </div>
                         )}
 
-                        <button
+                        <motion.button
                             onClick={() => {
                                 onSuccess();
                                 onClose();
                             }}
-                            className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full px-4 py-3 text-sm font-bold text-white bg-[#353535] rounded-xl hover:bg-[#2a2a2a] shadow-lg transition-all"
                         >
-                            Done
-                        </button>
-                    </div>
+                            Go to My Purchases
+                        </motion.button>
+                    </motion.div>
                 )}
             </div>
         </Modal>
