@@ -4,6 +4,8 @@ import { api } from '../../utils/api.client';
 import { Loader2, AlertCircle, Check, Wallet, Copy } from 'lucide-react';
 import { useZKLogin } from '../../hooks/useZKLogin';
 import { savePrivateKey } from '../../utils/keyStorage';
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
 import { motion } from 'framer-motion';
 
 interface PurchaseModalProps {
@@ -20,7 +22,10 @@ interface PurchaseModalProps {
 }
 
 export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, onSuccess, datapod }) => {
-    const { executeTransaction, isLoading: isTxLoading, address } = useZKLogin();
+    const { executeTransaction: executeZkTransaction, isLoading: isZkLoading, address: zkAddress } = useZKLogin();
+    const currentAccount = useCurrentAccount();
+    const { mutate: signAndExecuteTransaction, isPending: isWeb3Loading } = useSignAndExecuteTransaction();
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
     const [step, setStep] = useState<'confirm' | 'processing' | 'success'>('confirm');
@@ -34,15 +39,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
         setStep('processing');
 
         try {
-            if (!address) {
-                throw new Error('Wallet not connected. Please login first.');
-            }
-
-            // 1. Execute SUI Transaction
             // Sponsor address provided by user
             const sponsorAddress = '0xfd772cf73b7234594c34edf10650fcd71040e90566ce63b53c7434ac79c4461a';
 
-            await executeTransaction(sponsorAddress, datapod.price_sui, async (digest) => {
+            const handleSuccess = async (digest: string) => {
                 // 2. Notify Backend on Success
                 try {
                     const response = await api.createPurchase({
@@ -65,20 +65,53 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
                     }
 
                     setStep('success');
-                    // Do not auto-close, user needs to see the private key
                 } catch (apiErr: any) {
                     console.error('Backend notification failed:', apiErr);
-                    // Transaction succeeded but backend update failed
                     setError('Payment successful but failed to update order status. Please contact support.');
                     setStep('confirm');
                 }
-            });
+            };
+
+            if (currentAccount) {
+                // --- Web3 Wallet Flow ---
+                const tx = new Transaction();
+                const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(Number(datapod.price_sui) * 1_000_000_000)]);
+                tx.transferObjects([coin], tx.pure.address(sponsorAddress));
+
+                signAndExecuteTransaction(
+                    {
+                        transaction: tx as any,
+                    },
+                    {
+                        onSuccess: (result) => handleSuccess(result.digest),
+                        onError: (err) => {
+                            console.error('Web3 Purchase failed:', err);
+                            setError(err.message || 'Failed to complete purchase with wallet');
+                            setStep('confirm');
+                        },
+                    }
+                );
+            } else if (zkAddress) {
+                // --- ZK Login Flow ---
+                await executeZkTransaction(sponsorAddress, datapod.price_sui, handleSuccess);
+            } else {
+                throw new Error('Wallet not connected. Please login first.');
+            }
         } catch (err: any) {
             console.error('Purchase failed:', err);
             setError(err.message || 'Failed to complete purchase');
             setStep('confirm');
         } finally {
-            setIsProcessing(false);
+            // Only stop processing if we are not waiting for the Web3 mutation callback
+            // For ZK login, executeZkTransaction awaits, so we can stop here.
+            // For Web3, signAndExecuteTransaction is async but the callback handles the next steps.
+            // We'll let the callbacks manage the state or rely on isWeb3Loading if needed, 
+            // but since we setStep('processing'), we should be careful.
+            // Actually, for Web3, signAndExecuteTransaction returns immediately (void), so we shouldn't set isProcessing to false immediately if we want to show the spinner.
+            // However, isWeb3Loading from the hook will be true.
+            if (!currentAccount) {
+                setIsProcessing(false);
+            }
         }
     };
 
@@ -128,12 +161,12 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
                             </button>
                             <motion.button
                                 onClick={handlePurchase}
-                                disabled={isProcessing || isTxLoading}
+                                disabled={isProcessing || isZkLoading || isWeb3Loading}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#353535] rounded-lg hover:bg-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition-all"
                             >
-                                {isProcessing || isTxLoading ? (
+                                {isProcessing || isZkLoading || isWeb3Loading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                         Processing...

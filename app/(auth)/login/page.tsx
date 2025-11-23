@@ -33,7 +33,7 @@ export default function LoginPage() {
 
       const suiClient = new SuiClient({ url: suiRpcUrl });
       const { epoch } = await suiClient.getLatestSuiSystemState();
-      const maxEpoch = Number(epoch) + 2;
+      const maxEpoch = Number(epoch) + 10;
 
       const randomness = generateRandomness();
       const nonce = generateNonce(ephemeralPublicKey, maxEpoch, randomness);

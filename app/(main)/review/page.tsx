@@ -181,8 +181,8 @@ export default function ReviewPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 pt-8 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Seller Reviews</h1>
-          <p className="text-gray-500 mt-1">See what buyers think about our data quality and service</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Your Reviews</h1>
+          <p className="text-gray-500 mt-1"></p>
         </div>
       </div>
 

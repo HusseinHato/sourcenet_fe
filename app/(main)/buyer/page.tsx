@@ -47,8 +47,8 @@ export default function BuyerDashboard() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
 
-  const fetchPurchases = async () => {
-    setIsLoading(true);
+  const fetchPurchases = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const response = await api.getBuyerPurchases();
       // Transform API response
@@ -70,7 +70,7 @@ export default function BuyerDashboard() {
       console.error('Failed to fetch purchases:', error);
       // Fallback or empty state handled by UI
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -89,6 +89,13 @@ export default function BuyerDashboard() {
     }
 
     fetchPurchases();
+
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchPurchases(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [router, isAuthLoading, user]);
 
   const filteredPurchases = purchases.filter((p) => {
@@ -200,10 +207,10 @@ export default function BuyerDashboard() {
                 <TrendingUp className="text-white" size={20} />
               </div>
             </div>
-            <p className="text-sm font-medium text-gray-500 mb-1">Total Spent</p>
+            <p className="text-sm font-medium text-gray-300 mb-1">Total Spent</p>
             <div className="flex items-baseline gap-2">
-              <h2 className="text-3xl font-bold text-gray-900">{isLoading ? '-' : formatSuiBalance(totalSpent)}</h2>
-              <span className="text-sm font-medium text-gray-500">SUI</span>
+              <h2 className="text-3xl font-bold text-white">{isLoading ? '-' : formatSuiBalance(totalSpent)}</h2>
+              <span className="text-sm font-medium text-gray-300">SUI</span>
             </div>
           </div>
         </div>
@@ -291,8 +298,12 @@ export default function BuyerDashboard() {
                         )}
                         <button
                           onClick={() => handleDownloadClick(purchase)}
-                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-[#474747] hover:text-white hover:border-[#474747] transition-all"
-                          title="Download"
+                          disabled={purchase.status !== 'completed'}
+                          className={`p-2 rounded-lg border border-gray-200 transition-all ${purchase.status === 'completed'
+                            ? 'text-gray-500 hover:bg-[#474747] hover:text-white hover:border-[#474747]'
+                            : 'text-gray-300 cursor-not-allowed bg-gray-50'
+                            }`}
+                          title={purchase.status === 'completed' ? "Download" : "Download available when completed"}
                         >
                           <Download size={18} />
                         </button>
