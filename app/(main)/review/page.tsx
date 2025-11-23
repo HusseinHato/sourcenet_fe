@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUserStore } from '../store/userStore';
 import {
   Star,
   MessageSquare,
@@ -13,84 +15,25 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-type ReviewRating = 1 | 2 | 3 | 4 | 5;
-
-interface Review {
-  id: string;
-  buyer: string;
-  rating: ReviewRating;
-  title: string;
-  comment: string;
-  date: string;
-  helpful: number;
-  datapod: string;
-}
+import { deleteReview, ReviewWithDataPod } from '../../utils/review.client';
+import { api, getAuthToken } from '../../utils/api.client';
+import { ReviewList } from '../../components/review/ReviewList';
+import { Loader2 } from 'lucide-react';
 
 interface RatingStats {
   average: number;
   total: number;
-  distribution: Record<ReviewRating, number>;
+  distribution: Record<number, number>;
 }
 
-const mockReviews: Review[] = [
-  {
-    id: 'r-001',
-    buyer: 'John Doe',
-    rating: 5,
-    title: 'Excellent Data Quality',
-    comment: 'The dataset provided was comprehensive and well-organized. Highly recommend this seller for quality data.',
-    date: '2024-11-10',
-    helpful: 24,
-    datapod: 'Customer Behavior Analytics',
-  },
-  {
-    id: 'r-002',
-    buyer: 'Sarah Smith',
-    rating: 5,
-    title: 'Fast Delivery & Great Support',
-    comment: 'Delivered on time with excellent documentation. The seller was very responsive to questions.',
-    date: '2024-11-08',
-    helpful: 18,
-    datapod: 'E-commerce Transaction Data',
-  },
-  {
-    id: 'r-003',
-    buyer: 'Mike Johnson',
-    rating: 4,
-    title: 'Good Data, Minor Issues',
-    comment: 'Overall good quality data. Had a small formatting issue but seller fixed it quickly.',
-    date: '2024-11-05',
-    helpful: 12,
-    datapod: 'Social Media Sentiment Analysis',
-  },
-  {
-    id: 'r-004',
-    buyer: 'Emma Wilson',
-    rating: 5,
-    title: 'Perfect for Our Use Case',
-    comment: 'Exactly what we needed. The data quality is outstanding and the seller provided great insights.',
-    date: '2024-10-28',
-    helpful: 31,
-    datapod: 'Financial Market Data Feed',
-  },
-  {
-    id: 'r-005',
-    buyer: 'David Brown',
-    rating: 4,
-    title: 'Reliable Seller',
-    comment: 'Consistent quality and reliable. Would purchase again.',
-    date: '2024-10-20',
-    helpful: 8,
-    datapod: 'Healthcare Patient Records',
-  },
-];
+// Removed mockReviews
 
-const calculateRatingStats = (reviews: Review[]): RatingStats => {
-  const distribution: Record<ReviewRating, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+const calculateRatingStats = (reviews: ReviewWithDataPod[]): RatingStats => {
+  const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   let sum = 0;
 
   reviews.forEach((review) => {
-    distribution[review.rating]++;
+    distribution[review.rating] = (distribution[review.rating] || 0) + 1;
     sum += review.rating;
   });
 
@@ -113,7 +56,7 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
   </div>
 );
 
-const RatingBar = ({ rating, count, total }: { rating: ReviewRating; count: number; total: number }) => {
+const RatingBar = ({ rating, count, total }: { rating: number; count: number; total: number }) => {
   const percentage = total > 0 ? (count / total) * 100 : 0;
   return (
     <div className="flex items-center gap-3">
@@ -130,30 +73,106 @@ const RatingBar = ({ rating, count, total }: { rating: ReviewRating; count: numb
   );
 };
 
-export default function ReviewsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRating, setFilterRating] = useState<ReviewRating | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
+export default function ReviewPage() {
+  const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useUserStore();
+  const [reviews, setReviews] = useState<ReviewWithDataPod[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pagination, setPagination] = useState({ total: 0, limit: 10, offset: 0 });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const ratingStats = calculateRatingStats(mockReviews);
+  const fetchReviews = async (offset = 0) => {
+    if (offset === 0) setIsLoading(true);
+    else setIsLoadingMore(true);
 
-  let filteredReviews = mockReviews;
-  if (filterRating !== 'all') {
-    filteredReviews = filteredReviews.filter((r) => r.rating === filterRating);
-  }
-  if (searchQuery) {
-    filteredReviews = filteredReviews.filter(
-      (r) =>
-        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.comment.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }
+    try {
+      const token = getAuthToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-  if (sortBy === 'helpful') {
-    filteredReviews = [...filteredReviews].sort((a, b) => b.helpful - a.helpful);
-  } else {
-    filteredReviews = [...filteredReviews].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      console.log('Fetching reviews with token:', token ? 'Present' : 'Missing');
+
+      // TEST: Check if token works for buyer purchases
+      try {
+        console.log('TEST: Attempting to fetch buyer purchases...');
+        const testResponse = await api.getBuyerPurchases({ limit: 1 });
+        console.log('TEST: Buyer purchases fetch SUCCESS', testResponse.status);
+      } catch (testError: any) {
+        console.error('TEST: Buyer purchases fetch FAILED', testError.response?.status || testError.message);
+      }
+
+      const response = await fetch(`${apiUrl}/review/my-reviews?limit=${pagination.limit}&offset=${offset}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Review fetch failed:', response.status, errorText);
+        if (response.status === 401) {
+          // Don't redirect immediately, just show error
+          console.error('Auth failed for reviews endpoint');
+          // You might want to set a UI error state here
+        }
+        throw new Error(`Failed to fetch reviews: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const { reviews: newReviews, pagination: newPagination } = data.data;
+
+      if (offset === 0) {
+        setReviews(newReviews);
+      } else {
+        setReviews(prev => [...prev, ...newReviews]);
+      }
+      setPagination(newPagination);
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    // Wait for auth persistence to finish loading
+    if (isAuthLoading) {
+      return;
+    }
+
+    // Check if user is authenticated after loading is complete
+    const token = getAuthToken();
+
+    if (!token || !user) {
+      router.push('/login');
+      return;
+    }
+
+    fetchReviews();
+  }, [router, isAuthLoading, user]);
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteReview(reviewId);
+      // Refresh list
+      fetchReviews(0);
+    } catch (error) {
+      console.error('Failed to delete review:', error);
+    }
+  };
+
+  const handleLoadMore = () => {
+    fetchReviews(reviews.length);
+  };
+
+  const ratingStats = calculateRatingStats(reviews);
+
+  if (isAuthLoading) {
+    return (
+      <main className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <Loader2 className="animate-spin text-gray-400" size={32} />
+      </main>
     );
   }
 
@@ -188,8 +207,8 @@ export default function ReviewsPage() {
                 {[5, 4, 3, 2, 1].map((rating) => (
                   <RatingBar
                     key={rating}
-                    rating={rating as ReviewRating}
-                    count={ratingStats.distribution[rating as ReviewRating]}
+                    rating={rating}
+                    count={ratingStats.distribution[rating]}
                     total={ratingStats.total}
                   />
                 ))}
@@ -218,16 +237,16 @@ export default function ReviewsPage() {
                 <input
                   type="text"
                   placeholder="Search reviews..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={''}
+                  onChange={() => { }}
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                 />
               </div>
               <div className="flex gap-3">
                 <div className="relative">
                   <select
-                    value={filterRating}
-                    onChange={(e) => setFilterRating(e.target.value as ReviewRating | 'all')}
+                    value={''}
+                    onChange={() => { }}
                     className="appearance-none pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer"
                   >
                     <option value="all">All Ratings</option>
@@ -241,8 +260,8 @@ export default function ReviewsPage() {
                 </div>
                 <div className="relative">
                   <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'recent' | 'helpful')}
+                    value={''}
+                    onChange={() => { }}
                     className="appearance-none pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer"
                   >
                     <option value="recent">Most Recent</option>
@@ -255,61 +274,24 @@ export default function ReviewsPage() {
 
             {/* Reviews */}
             <div className="space-y-4">
-              {filteredReviews.length > 0 ? (
-                filteredReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                          <User size={20} className="text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{review.buyer}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Calendar size={12} />
-                            {new Date(review.date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      <StarRating rating={review.rating} />
-                    </div>
-
-                    <div className="mb-4">
-                      <h3 className="font-bold text-gray-900 mb-2">{review.title}</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed mb-3">{review.comment}</p>
-                      <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-xs text-gray-500">
-                        Dataset: {review.datapod}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                        <ThumbsUp size={16} />
-                        <span>Helpful ({review.helpful})</span>
-                      </button>
-                      <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                        <MessageSquare size={16} />
-                        <span>Reply</span>
-                      </button>
-                    </div>
+              {/* Reviews List */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-gray-900">Recent Reviews</h2>
                   </div>
-                ))
-              ) : (
-                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
-                    <MessageSquare className="text-gray-400" size={24} />
-                  </div>
-                  <p className="text-lg font-semibold text-gray-900">No reviews found</p>
-                  <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or search query</p>
+
+                  <ReviewList
+                    reviews={reviews}
+                    isLoading={isLoading}
+                    canDelete={true}
+                    onDelete={handleDeleteReview}
+                    hasMore={reviews.length < pagination.total}
+                    onLoadMore={handleLoadMore}
+                    isLoadingMore={isLoadingMore}
+                  />
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

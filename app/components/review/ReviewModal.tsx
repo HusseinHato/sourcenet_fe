@@ -2,18 +2,26 @@
 
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
-import { api } from '../../utils/api.client';
-import { Star, Loader2, AlertCircle, Check } from 'lucide-react';
+import { createReview } from '../../utils/review.client';
+import { Star, Loader2, AlertCircle } from 'lucide-react';
 
 interface ReviewModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    purchaseId: string;
+    purchaseRequestId: string;  // On-chain purchase ID
+    datapodId: string;           // DataPod UUID
     purchaseTitle: string;
 }
 
-export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, onSuccess, purchaseId, purchaseTitle }) => {
+export const ReviewModal: React.FC<ReviewModalProps> = ({
+    isOpen,
+    onClose,
+    onSuccess,
+    purchaseRequestId,
+    datapodId,
+    purchaseTitle
+}) => {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [hoverRating, setHoverRating] = useState(0);
@@ -31,7 +39,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, onSuc
         setError('');
 
         try {
-            await api.submitReview(purchaseId, { rating, comment });
+            await createReview({
+                purchaseRequestId,
+                datapodId,
+                rating,
+                comment: comment.trim() || undefined,
+            });
             onSuccess();
             onClose();
             resetForm();
@@ -72,8 +85,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, onSuc
                                 <Star
                                     size={32}
                                     className={`${star <= (hoverRating || rating)
-                                            ? 'fill-yellow-400 text-yellow-400'
-                                            : 'fill-gray-200 text-gray-200'
+                                        ? 'fill-yellow-400 text-yellow-400'
+                                        : 'fill-gray-200 text-gray-200'
                                         }`}
                                 />
                             </button>

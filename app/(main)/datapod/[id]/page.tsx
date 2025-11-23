@@ -14,37 +14,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import { api } from '../../../utils/api.client';
+import { getDataPodReviews, ReviewWithBuyer } from '../../../utils/review.client';
 import { PurchaseModal } from '../../../components/marketplace/PurchaseModal';
+import { ReviewList } from '../../../components/review/ReviewList';
 
-type ReviewRating = 1 | 2 | 3 | 4 | 5;
-
-interface DatasetDetail {
-  id: string;
-  datapodId: string;
-  title: string;
-  description: string;
-  seller: string;
-  price: number;
-  category: string;
-  createdAt: string;
-  downloads: number;
-  rating: number;
-  reviewsCount: number;
-  tags: string[];
-  status: string;
-  blobId: string;
-  kioskId: string;
-}
-
-interface Review {
-  id: string;
-  buyer: string;
-  rating: ReviewRating;
-  title: string;
-  comment: string;
-  date: string;
-  helpful: number;
-}
+// Removed local interfaces in favor of shared types
 
 const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) => (
   <div className="flex gap-1">
@@ -64,10 +38,12 @@ export default function DataDetailPage() {
 
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
   const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
-  const [dataset, setDataset] = useState<DatasetDetail | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [dataset, setDataset] = useState<any | null>(null); // Using any for now to avoid re-declaring DatasetDetail
+  const [reviews, setReviews] = useState<ReviewWithBuyer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [reviewsPagination, setReviewsPagination] = useState({ total: 0, limit: 5, offset: 0 });
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
   const fetchData = async () => {
     if (!id) return;
@@ -75,8 +51,6 @@ export default function DataDetailPage() {
     try {
       const response = await api.getDataPodDetails(id);
       const data = response.data.data;
-
-      console.log("data", data);
 
       if (data) {
         setDataset({
@@ -97,15 +71,8 @@ export default function DataDetailPage() {
           kioskId: data.kioskId,
         });
 
-        setReviews(data.reviews?.map((r: any) => ({
-          id: r.id,
-          buyer: 'Anonymous',
-          rating: r.rating,
-          title: 'Review',
-          comment: r.comment,
-          date: r.createdAt,
-          helpful: 0,
-        })) || []);
+        // Initial reviews fetch
+        fetchReviews(data.datapodId);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -114,12 +81,38 @@ export default function DataDetailPage() {
     }
   };
 
+  const fetchReviews = async (datapodUUID: string, offset = 0) => {
+    setIsLoadingReviews(true);
+    try {
+      const response = await getDataPodReviews(datapodUUID, reviewsPagination.limit, offset);
+      const { reviews: newReviews, pagination } = response.data.data;
+
+      if (offset === 0) {
+        setReviews(newReviews);
+      } else {
+        setReviews(prev => [...prev, ...newReviews]);
+      }
+      setReviewsPagination(pagination);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  };
+
+  const handleLoadMoreReviews = () => {
+    if (dataset?.datapodId) {
+      fetchReviews(dataset.datapodId, reviews.length);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [id]);
 
+  // Sorting is handled by backend or simple client-side sort by date
   const sortedReviews = [...reviews].sort((a, b) =>
-    sortBy === 'helpful' ? b.helpful - a.helpful : new Date(b.date).getTime() - new Date(a.date).getTime()
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   if (isLoading) {
@@ -192,7 +185,7 @@ export default function DataDetailPage() {
 
               {/* Tags */}
               <div className="mt-6 flex flex-wrap gap-2">
-                {dataset.tags.map((tag) => (
+                {dataset.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="inline-block px-3 py-1 rounded-lg bg-gray-50 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -218,34 +211,13 @@ export default function DataDetailPage() {
               </div>
 
               <div className="space-y-6">
-                {sortedReviews.length > 0 ? (
-                  sortedReviews.map((review) => (
-                    <div key={review.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900">{review.buyer}</span>
-                          <span className="text-xs text-gray-500">•</span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(review.date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                        <StarRating rating={review.rating} size={14} />
-                      </div>
-                      <h4 className="text-sm font-semibold text-gray-900 mb-1">{review.title}</h4>
-                      <p className="text-sm text-gray-600 mb-3">{review.comment}</p>
-                      <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                        <ThumbsUp size={14} />
-                        Helpful ({review.helpful})
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No reviews yet.</p>
-                )}
+                <ReviewList
+                  reviews={reviews}
+                  isLoading={isLoadingReviews && reviews.length === 0}
+                  hasMore={reviews.length < reviewsPagination.total}
+                  onLoadMore={handleLoadMoreReviews}
+                  isLoadingMore={isLoadingReviews}
+                />
               </div>
             </div>
           </div>

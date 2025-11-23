@@ -156,8 +156,8 @@ export const api = {
   },
 
   // Review
-  async getMyReviews() {
-    return apiClient.get('/review/my-reviews');
+  async getMyReviews(params?: { limit?: number; offset?: number }) {
+    return apiClient.get('/review/my-reviews', { params });
   },
   async deleteReview(reviewId: string) {
     return apiClient.delete(`/review/${reviewId}`);

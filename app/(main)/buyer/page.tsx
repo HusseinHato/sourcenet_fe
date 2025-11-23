@@ -20,9 +20,11 @@ import { api, getAuthToken } from '../../utils/api.client';
 import { DownloadModal } from '../../components/buyer/DownloadModal';
 import { ReviewModal } from '../../components/review/ReviewModal';
 import { useUserStore } from '../store/userStore';
+import { formatSuiBalance } from '../../utils/format.utils';
 
 interface Purchase {
-  id: string;
+  id: string;                // purchaseRequestId (on-chain ID)
+  datapodId: string;         // DataPod UUID for reviews
   title: string;
   seller: string;
   price_sui: number;
@@ -55,6 +57,7 @@ export default function BuyerDashboard() {
 
       setPurchases(fetchedPurchases.map((p: any) => ({
         id: p.purchaseRequestId, // Use purchaseRequestId for lookups
+        datapodId: p.datapodId || p.datapod?.id, // DataPod UUID
         title: p.datapod?.title || 'Unknown Title',
         seller: p.datapod?.seller?.username || 'Unknown Seller',
         price_sui: Number(p.priceSui),
@@ -197,8 +200,11 @@ export default function BuyerDashboard() {
                 <TrendingUp className="text-white" size={20} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm font-medium">Total Spent</p>
-            <p className="text-3xl font-bold text-white mt-1">{isLoading ? '-' : totalSpent} <span className="text-lg font-normal text-gray-400">SUI</span></p>
+            <p className="text-sm font-medium text-gray-500 mb-1">Total Spent</p>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-gray-900">{isLoading ? '-' : formatSuiBalance(totalSpent)}</h2>
+              <span className="text-sm font-medium text-gray-500">SUI</span>
+            </div>
           </div>
         </div>
 
@@ -269,7 +275,8 @@ export default function BuyerDashboard() {
                         </div>
                       )}
                       <div className="text-right min-w-[80px]">
-                        <p className="text-lg font-bold text-gray-900">{purchase.price_sui} SUI</p>
+                        <p className="text-sm font-medium text-gray-600">Price</p>
+                        <p className="text-lg font-bold text-gray-900">{formatSuiBalance(purchase.price_sui)} SUI</p>
                       </div>
 
                       <div className="flex gap-2">
@@ -320,10 +327,12 @@ export default function BuyerDashboard() {
             isOpen={isReviewModalOpen}
             onClose={() => setIsReviewModalOpen(false)}
             onSuccess={() => {
-              fetchPurchases(); // Refresh to show updated rating
+              fetchPurchases(); // Refresh to show new review
+              setIsReviewModalOpen(false);
             }}
-            purchaseId={selectedPurchase.id}
-            purchaseTitle={selectedPurchase.title}
+            purchaseRequestId={selectedPurchase?.id || ''}
+            datapodId={selectedPurchase?.datapodId || ''}
+            purchaseTitle={selectedPurchase?.title || ''}
           />
         </>
       )}

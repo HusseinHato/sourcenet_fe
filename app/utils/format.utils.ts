@@ -8,6 +8,20 @@ export function formatPrice(price: number, currency: string = 'SUI'): string {
 }
 
 /**
+ * Format SUI balance with proper decimal precision
+ * Fixes floating point precision errors (e.g., 2.8000000000000003 → 2.80)
+ */
+export function formatSuiBalance(balance: number | string | null | undefined): string {
+  if (balance === null || balance === undefined) return '0.00';
+
+  const numBalance = typeof balance === 'string' ? parseFloat(balance) : balance;
+
+  if (isNaN(numBalance)) return '0.00';
+
+  return numBalance.toFixed(2);
+}
+
+/**
  * Format file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {
