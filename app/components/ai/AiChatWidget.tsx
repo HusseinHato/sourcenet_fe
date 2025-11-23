@@ -5,14 +5,19 @@ import { Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import { AiChatWindow } from './AiChatWindow';
+import type { ChatContext } from '@/app/types/ai.types';
 
-export function AiChatWidget() {
+interface AiChatWidgetProps {
+    context?: ChatContext;
+}
+
+export function AiChatWidget({ context }: AiChatWidgetProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
         <>
             <AnimatePresence>
-                {isOpen && <AiChatWindow onClose={() => setIsOpen(false)} />}
+                {isOpen && <AiChatWindow onClose={() => setIsOpen(false)} context={context} />}
             </AnimatePresence>
 
             {!isOpen && (
