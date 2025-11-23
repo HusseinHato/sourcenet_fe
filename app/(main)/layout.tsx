@@ -2,6 +2,7 @@ import { Navbar } from "@/app/components/layout/Navbar";
 import { Sidebar } from "@/app/components/layout/Sidebar";
 import { AuthProvider } from "@/app/components/providers/AuthProvider";
 import { Suspense } from "react";
+import { AiChatWidget } from "@/app/components/ai/AiChatWidget";
 
 export default function MainLayout({
     children,
@@ -18,6 +19,7 @@ export default function MainLayout({
                 <main className="relative z-10 md:ml-52 min-h-screen pt-24">
                     {children}
                 </main>
+                <AiChatWidget />
             </div>
         </AuthProvider>
     );

@@ -445,7 +445,7 @@ export default function WalletPage() {
                                         <p className="text-sm font-medium">{status.message}</p>
                                         {digest && (
                                             <a
-                                                href={`https://suiscan.xyz/testnet/tx/${digest}`}
+                                                href={`https://suiscan.xyz/devnet/tx/${digest}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-xs underline mt-1 inline-flex items-center gap-1 hover:opacity-80"
