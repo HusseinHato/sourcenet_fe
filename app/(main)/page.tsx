@@ -33,8 +33,8 @@ function HomeContent() {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchData = async (silent = false) => {
+      if (!silent) setLoading(true);
       try {
         let apiSort: 'newest' | 'price_asc' | 'price_desc' | 'rating' | undefined;
         if (sortBy === 'trending') apiSort = 'newest';
@@ -77,11 +77,18 @@ function HomeContent() {
         console.error('Failed to fetch datapods:', error);
         setDatapods([]);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     };
 
     fetchData();
+
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [page, selectedCategory, sortBy, searchQuery]);
 
   const totalPages = Math.ceil(total / limit);

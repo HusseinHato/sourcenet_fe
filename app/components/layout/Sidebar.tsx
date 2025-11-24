@@ -61,7 +61,14 @@ export function Sidebar() {
         {/* Upload Data Button - Top of Sidebar */}
         <div className="px-4 pt-4 pb-3">
           <motion.button
-            onClick={() => setIsUploadModalOpen(true)}
+            onClick={() => {
+              const token = localStorage.getItem('authToken') || localStorage.getItem('zklogin_jwt');
+              if (!token) {
+                router.push('/login');
+                return;
+              }
+              setIsUploadModalOpen(true);
+            }}
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
             className="w-full relative overflow-hidden flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all group"

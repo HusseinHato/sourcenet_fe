@@ -18,8 +18,8 @@ export default function MyReviewsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-    const fetchReviews = async () => {
-        setIsLoading(true);
+    const fetchReviews = async (silent = false) => {
+        if (!silent) setIsLoading(true);
         try {
             const response = await api.getMyReviews();
             // Transform API response if needed
@@ -35,12 +35,19 @@ export default function MyReviewsPage() {
         } catch (error) {
             console.error('Failed to fetch reviews:', error);
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     };
 
     useEffect(() => {
         fetchReviews();
+
+        // Poll for updates every 5 seconds
+        const interval = setInterval(() => {
+            fetchReviews(true);
+        }, 5000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const handleDelete = async (reviewId: string) => {

@@ -56,8 +56,8 @@ export default function SellerDashboard() {
     activeListings: 0,
   });
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [podsResponse, statsResponse] = await Promise.all([
         api.getSellerDataPods(),
@@ -96,7 +96,7 @@ export default function SellerDashboard() {
       console.error('Failed to fetch seller data:', error);
       // Fallback to empty or error state
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -115,6 +115,13 @@ export default function SellerDashboard() {
     }
 
     fetchData();
+
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [router, isAuthLoading, user]);
 
   const handleDelete = async (id: string) => {

@@ -81,9 +81,11 @@ export default function ReviewPage() {
   const [pagination, setPagination] = useState({ total: 0, limit: 10, offset: 0 });
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const fetchReviews = async (offset = 0) => {
-    if (offset === 0) setIsLoading(true);
-    else setIsLoadingMore(true);
+  const fetchReviews = async (offset = 0, silent = false) => {
+    if (!silent) {
+      if (offset === 0) setIsLoading(true);
+      else setIsLoadingMore(true);
+    }
 
     try {
       const token = getAuthToken();
@@ -130,8 +132,10 @@ export default function ReviewPage() {
     } catch (error) {
       console.error('Failed to fetch reviews:', error);
     } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
+      if (!silent) {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -150,6 +154,16 @@ export default function ReviewPage() {
     }
 
     fetchReviews();
+
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      // Only poll if we are on the first page to keep list fresh
+      // Pagination polling is complex, so we just refresh the first page or current view
+      // For simplicity, let's just refresh the first page (offset 0) silently
+      fetchReviews(0, true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [router, isAuthLoading, user]);
 
   const handleDeleteReview = async (reviewId: string) => {

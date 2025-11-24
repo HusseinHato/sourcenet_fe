@@ -114,9 +114,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   }, [user?.address]);
 
   const handleLogout = () => {
+    // Clear API auth token
     clearAuthToken();
+
+    // Clear all localStorage items related to authentication
     localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+
+    // Clear all ZK Login related items
+    localStorage.removeItem('zklogin_jwt');
+    localStorage.removeItem('zklogin_ephemeral_keypair');
+    localStorage.removeItem('zklogin_randomness');
+    localStorage.removeItem('zklogin_max_epoch');
+    localStorage.removeItem('zklogin_salt');
+
+    // Clear Zustand store
     storeLogout();
+
     setIsMobileMenuOpen(false);
     router.push('/login');
   };

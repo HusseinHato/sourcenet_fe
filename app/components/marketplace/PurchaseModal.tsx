@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Modal } from '../common/Modal';
 import { api } from '../../utils/api.client';
 import { Loader2, AlertCircle, Check, Wallet, Copy } from 'lucide-react';
@@ -22,6 +23,7 @@ interface PurchaseModalProps {
 }
 
 export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, onSuccess, datapod }) => {
+    const router = useRouter();
     const { executeTransaction: executeZkTransaction, isLoading: isZkLoading, address: zkAddress } = useZKLogin();
     const currentAccount = useCurrentAccount();
     const { mutate: signAndExecuteTransaction, isPending: isWeb3Loading } = useSignAndExecuteTransaction();
@@ -263,6 +265,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, o
                             onClick={() => {
                                 onSuccess();
                                 onClose();
+                                router.push('/buyer');
                             }}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import {
   Star,
   Share2,
@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { api } from '../../../utils/api.client';
+import { api, getAuthToken } from '../../../utils/api.client';
+import { useUserStore } from '../../store/userStore';
 import { getDataPodReviews, ReviewWithBuyer } from '../../../utils/review.client';
 import { PurchaseModal } from '../../../components/marketplace/PurchaseModal';
 import { ReviewList } from '../../../components/review/ReviewList';
@@ -35,7 +36,8 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
 export default function DataDetailPage() {
   const params = useParams();
   const id = params.id as string;
-
+  const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useUserStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
   const [sortBy, setSortBy] = useState<'recent' | 'helpful'>('recent');
   const [dataset, setDataset] = useState<any | null>(null); // Using any for now to avoid re-declaring DatasetDetail
@@ -45,9 +47,9 @@ export default function DataDetailPage() {
   const [reviewsPagination, setReviewsPagination] = useState({ total: 0, limit: 5, offset: 0 });
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     if (!id) return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const response = await api.getDataPodDetails(id);
       const data = response.data.data;
@@ -72,12 +74,14 @@ export default function DataDetailPage() {
         });
 
         // Initial reviews fetch
-        fetchReviews(data.datapodId);
+        if (!silent) {
+          fetchReviews(data.datapodId);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -108,6 +112,13 @@ export default function DataDetailPage() {
 
   useEffect(() => {
     fetchData();
+
+    // Poll for updates every 5 seconds
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   // Sorting is handled by backend or simple client-side sort by date
@@ -236,7 +247,14 @@ export default function DataDetailPage() {
 
                 <div className="space-y-3 mb-6">
                   <button
-                    onClick={() => setIsPurchaseModalOpen(true)}
+                    onClick={() => {
+                      const token = localStorage.getItem('authToken') || localStorage.getItem('zklogin_jwt');
+                      if (!token) {
+                        router.push('/login');
+                        return;
+                      }
+                      setIsPurchaseModalOpen(true);
+                    }}
                     className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white transition active:scale-95 shadow-sm hover:opacity-90"
                     style={{ backgroundColor: '#474747' }}
                   >
