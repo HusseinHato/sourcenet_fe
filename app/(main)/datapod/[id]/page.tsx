@@ -12,11 +12,14 @@ import {
   ChevronRight,
   ShieldCheck,
   Loader2,
+  Check,
+  FileText,
 } from 'lucide-react';
 import { api, getAuthToken } from '../../../utils/api.client';
 import { useUserStore } from '../../store/userStore';
 import { getDataPodReviews, ReviewWithBuyer } from '../../../utils/review.client';
 import { PurchaseModal } from '../../../components/marketplace/PurchaseModal';
+import { PreviewModal } from '../../../components/marketplace/PreviewModal';
 import { ReviewList } from '../../../components/review/ReviewList';
 
 // Removed local interfaces in favor of shared types
@@ -33,6 +36,18 @@ const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) =>
   </div>
 );
 
+const formatBytes = (bytes: number, decimals = 2) => {
+  if (!+bytes) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
+
 export default function DataDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -44,8 +59,10 @@ export default function DataDetailPage() {
   const [reviews, setReviews] = useState<ReviewWithBuyer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [reviewsPagination, setReviewsPagination] = useState({ total: 0, limit: 5, offset: 0 });
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const fetchData = async (silent = false) => {
     if (!id) return;
@@ -53,6 +70,10 @@ export default function DataDetailPage() {
     try {
       const response = await api.getDataPodDetails(id);
       const data = response.data.data;
+
+      console.log('🔍 Raw API Response:', data);
+      console.log('🔍 Preview Data:', data.previewData, data.preview_data, data.preview);
+      console.log('🔍 Size Bytes:', data.sizeBytes, data.size_bytes);
 
       if (data) {
         setDataset({
@@ -71,7 +92,11 @@ export default function DataDetailPage() {
           status: data.status,
           blobId: data.blobId,
           kioskId: data.kioskId,
+          preview: data.previewData || data.preview_data || data.preview || null, // Map preview data from backend
+          size: data.sizeBytes ? Number(data.sizeBytes) : (data.size_bytes ? Number(data.size_bytes) : 0), // Map sizeBytes
         });
+
+        console.log('✅ Dataset state set with preview:', data.previewData || data.preview_data || data.preview);
 
         // Initial reviews fetch
         if (!silent) {
@@ -107,6 +132,16 @@ export default function DataDetailPage() {
   const handleLoadMoreReviews = () => {
     if (dataset?.datapodId) {
       fetchReviews(dataset.datapodId, reviews.length);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
     }
   };
 
@@ -262,18 +297,24 @@ export default function DataDetailPage() {
                     Purchase Dataset
                   </button>
                   <div className="grid grid-cols-2 gap-3">
-                    <button className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300">
+                    <button
+                      onClick={() => setIsPreviewModalOpen(true)}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300 relative z-10"
+                    >
                       <Eye size={18} />
                       Preview
                     </button>
-                    <button className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300">
-                      <Share2 size={18} />
-                      Share
+                    <button
+                      onClick={handleShare}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300 relative z-10"
+                    >
+                      {isCopied ? <Check size={18} className="text-green-600" /> : <Share2 size={18} />}
+                      {isCopied ? 'Copied!' : 'Share'}
                     </button>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
                   <div className="flex gap-3">
                     <ShieldCheck size={20} className="text-[#474747] flex-shrink-0" />
                     <div>
@@ -283,6 +324,17 @@ export default function DataDetailPage() {
                       </p>
                     </div>
                   </div>
+                  {dataset.size > 0 && (
+                    <div className="flex gap-3 pt-3 border-t border-gray-200">
+                      <FileText size={20} className="text-[#474747] flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 mb-0.5">File Size</p>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                          {formatBytes(dataset.size)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -305,6 +357,16 @@ export default function DataDetailPage() {
             price_sui: dataset.price,
             seller_name: dataset.seller,
           }}
+        />
+      )}
+
+      {/* Preview Modal */}
+      {dataset && (
+        <PreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => setIsPreviewModalOpen(false)}
+          previewData={dataset.preview}
+          title={dataset.title}
         />
       )}
     </main>

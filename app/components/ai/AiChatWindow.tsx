@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Send, Plus, MessageSquare, ChevronDown, Sparkles, ArrowUp, Trash2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useAiChat } from '@/app/hooks/useAiChat';
 import { aiService } from '@/app/utils/ai.service';
 import type { ConversationSummary, ChatContext } from '@/app/types/ai.types';
@@ -252,7 +254,40 @@ export function AiChatWindow({ onClose, context }: AiChatWindowProps) {
                                                 <span className="text-xs font-medium text-blue-400">SourceNet AI</span>
                                             </div>
                                         )}
-                                        <p className="leading-relaxed text-[15px] whitespace-pre-wrap">{msg.content}</p>
+                                        {msg.role === 'user' ? (
+                                            <p className="leading-relaxed text-[15px] whitespace-pre-wrap">{msg.content}</p>
+                                        ) : (
+                                            <div className="prose prose-invert prose-sm max-w-none">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4 text-white" {...props} />,
+                                                        h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3 text-white" {...props} />,
+                                                        h3: ({ node, ...props }) => <h3 className="text-base font-semibold mb-2 mt-2 text-white" {...props} />,
+                                                        p: ({ node, ...props }) => <p className="mb-2 leading-relaxed text-gray-200" {...props} />,
+                                                        ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 space-y-1 text-gray-200" {...props} />,
+                                                        ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 space-y-1 text-gray-200" {...props} />,
+                                                        li: ({ node, ...props }) => <li className="text-gray-200" {...props} />,
+                                                        code: ({ node, inline, ...props }: any) =>
+                                                            inline ? (
+                                                                <code className="bg-[#252525] px-1.5 py-0.5 rounded text-blue-300 text-sm font-mono" {...props} />
+                                                            ) : (
+                                                                <code className="block bg-[#252525] p-3 rounded-lg text-blue-300 text-sm font-mono overflow-x-auto my-2" {...props} />
+                                                            ),
+                                                        pre: ({ node, ...props }) => <pre className="bg-[#252525] p-3 rounded-lg overflow-x-auto my-2" {...props} />,
+                                                        strong: ({ node, ...props }) => <strong className="font-bold text-white" {...props} />,
+                                                        em: ({ node, ...props }) => <em className="italic text-gray-300" {...props} />,
+                                                        a: ({ node, ...props }) => <a className="text-blue-400 hover:underline" {...props} />,
+                                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 my-2" {...props} />,
+                                                        table: ({ node, ...props }) => <table className="border-collapse border border-gray-600 my-2" {...props} />,
+                                                        th: ({ node, ...props }) => <th className="border border-gray-600 px-3 py-2 bg-[#252525] font-semibold text-white" {...props} />,
+                                                        td: ({ node, ...props }) => <td className="border border-gray-600 px-3 py-2 text-gray-200" {...props} />,
+                                                    }}
+                                                >
+                                                    {msg.content}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}

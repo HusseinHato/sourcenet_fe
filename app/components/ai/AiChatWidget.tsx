@@ -28,7 +28,7 @@ export function AiChatWidget({ context }: AiChatWidgetProps) {
                     onClick={() => setIsOpen(true)}
                     className="
                         fixed bottom-6 right-6 
-                        w-16 h-16 
+                        w-19 h-19 
                         bg-[#1A1A1A] 
                         rounded-full shadow-2xl 
                         flex items-center justify-center 
@@ -39,8 +39,8 @@ export function AiChatWidget({ context }: AiChatWidgetProps) {
                     "
                 >
                     {/* LABEL AI DI ATAS LOGO */}
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-                        <span className="text-[10px] uppercase tracking-widest text-gray-300 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2">
+                        <span className="text-[15px] uppercase tracking-widest text-white opacity-100 group-hover:opacity-100 transition-opacity">
                             AI
                         </span>
                     </div>

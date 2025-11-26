@@ -1,22 +1,46 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { Database, Star, Loader2, Filter, ChevronDown, Box } from 'lucide-react';
+import { Database, Star, Loader2, Filter, ChevronDown, Box, Brain, DollarSign, Heart, Users, ShoppingCart, Leaf } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '../utils/api.client';
 import Link from 'next/link';
 
+// Get category-specific icon
+const getCategoryIcon = (category: string) => {
+  switch (category?.toLowerCase()) {
+    case 'ai/ml':
+      return Brain;
+    case 'finance':
+      return DollarSign;
+    case 'healthcare':
+      return Heart;
+    case 'social':
+      return Users;
+    case 'e-commerce':
+      return ShoppingCart;
+    case 'climate':
+      return Leaf;
+    default:
+      return Box;
+  }
+};
+
 // Placeholder pattern
-const PlaceholderPattern = () => (
-  <div className="w-full h-full bg-[#F3F3F3] relative overflow-hidden">
-    <div className="absolute inset-0 opacity-[0.08]"
-      style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #353535 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
-    <div className="absolute inset-0 flex items-center justify-center">
-      <Box size={32} className="text-[#CECECE]" />
+const PlaceholderPattern = ({ category }: { category?: string }) => {
+  const IconComponent = getCategoryIcon(category || '');
+
+  return (
+    <div className="w-full h-full bg-[#F3F3F3] relative overflow-hidden">
+      <div className="absolute inset-0 opacity-[0.08]"
+        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #353535 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <IconComponent size={32} className="text-[#CECECE]" />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#F3F3F3] via-transparent to-transparent" />
     </div>
-    <div className="absolute inset-0 bg-gradient-to-t from-[#F3F3F3] via-transparent to-transparent" />
-  </div>
-);
+  );
+};
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -178,7 +202,7 @@ function HomeContent() {
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
-                        <PlaceholderPattern />
+                        <PlaceholderPattern category={dataPod.category} />
                       )}
 
                       <div className="absolute top-3 left-3 z-10">
