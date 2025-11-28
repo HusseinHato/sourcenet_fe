@@ -1749,10 +1749,7 @@ SOFTWARE.
 
 ## 📞 Contact & Support
 
-- **Website**: [sourcenet.io](https://sourcenet.io)
-- **Email**: support@sourcenet.io
-- **Twitter**: [@SourceNetIO](https://twitter.com/SourceNetIO)
-- **Discord**: [Join our community](https://discord.gg/sourcenet)
+- **Website**: [sourcenet.io](https://sourcenet.vercel.app)
 - **GitHub**: [HusseinHato/sourcenet_fe](https://github.com/HusseinHato/sourcenet_fe)
 
 ---
